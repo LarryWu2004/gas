@@ -1,0 +1,1348 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>燃气调压器健康诊断系统</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #F0F2F8;
+      --surface: #FFFFFF;
+      --surface-2: #F9FAFB;
+      --ink: #111827;
+      --ink-2: #374151;
+      --muted: #6B7280;
+      --soft: #9CA3AF;
+      --line: #E5E7EB;
+      --line-soft: #F3F4F6;
+      --primary: #1A73E8;
+      --primary-light: #EEF4FF;
+      --success: #34A853;
+      --success-light: #E8F5E9;
+      --warning: #FBBC04;
+      --warning-light: #FFF8EB;
+      --warning-text: #E5A100;
+      --danger: #EA4335;
+      --danger-light: #FDE8E8;
+      --radius: 12px;
+      --radius-sm: 8px;
+      --radius-lg: 16px;
+      --shadow-card: 0 14px 34px rgba(17, 24, 39, .08);
+      --shadow-soft: 0 8px 22px rgba(17, 24, 39, .05);
+      --font: "Noto Sans SC", -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+      --font-mono: "SF Mono", "Cascadia Code", "Consolas", "Monaco", monospace;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { background: var(--bg); font-size: 15px; }
+    body { font-family: var(--font); color: var(--ink); background: var(--bg); min-height: 100vh; -webkit-font-smoothing: antialiased; }
+    button, input, select { font: inherit; } button { cursor: pointer; border: none; background: none; } input, select { outline: none; }
+
+    .topnav {
+      height: 72px;
+      background: rgba(255,255,255,.94);
+      border-bottom: 1px solid rgba(229,231,235,.86);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 28px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 8px 28px rgba(17,24,39,.04);
+      backdrop-filter: blur(14px);
+    }
+    .nav-left { display: flex; align-items: center; gap: 14px; min-width: 0; }
+    .logo {
+      width: 42px;
+      height: 42px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, #1A73E8 0%, #155BC0 100%);
+      display: grid;
+      place-items: center;
+      color: #fff;
+      font-weight: 800;
+      font-size: 16px;
+      flex-shrink: 0;
+      box-shadow: 0 10px 24px rgba(26,115,232,.24);
+    }
+    .logo svg { width: 24px; height: 24px; display: block; }
+    .brand-copy { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+    .app-title { font-size: 18px; font-weight: 700; color: var(--ink); letter-spacing: -0.01em; line-height: 1.15; }
+    .app-subtitle { font-size: 12px; font-weight: 500; color: var(--soft); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .nav-right { display: flex; align-items: center; gap: 10px; }
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      height: 36px;
+      padding: 0 14px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: var(--surface-2);
+    }
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--success); flex-shrink: 0; box-shadow: 0 0 0 4px rgba(52,168,83,.12); }
+    .status-label { font-size: 13px; font-weight: 600; color: var(--ink-2); }
+    .nav-link {
+      height: 36px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--primary);
+      padding: 0 16px;
+      border-radius: 999px;
+      background: var(--primary-light);
+      border: 1px solid rgba(26,115,232,.12);
+      text-decoration: none;
+      transition: background .15s, transform .1s, box-shadow .15s;
+    }
+    .nav-link:hover { background: #dce8fc; box-shadow: 0 8px 18px rgba(26,115,232,.12); }
+    .nav-link:active { transform: translateY(1px); }
+
+    .shell { display: grid; grid-template-columns: 320px minmax(0, 1fr); min-height: calc(100vh - 64px); }
+    .sidebar { background: var(--surface); border-right: 1px solid var(--line); padding: 24px; display: flex; flex-direction: column; gap: 6px; overflow-y: auto; }
+    .sb-title { font-size: 13px; font-weight: 600; color: var(--soft); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 0; }
+    .sb-section { display: flex; flex-direction: column; gap: 10px; padding-top: 14px; padding-bottom: 10px; }
+    .sb-section+.sb-section { border-top: 1px solid var(--line-soft); }
+
+    .dropzone { border: 2px dashed var(--line); border-radius: var(--radius); padding: 28px 16px; text-align: center; cursor: pointer; transition: all .15s; background: var(--surface-2); }
+    .dropzone:hover, .dropzone.dragover { border-color: var(--primary); background: var(--primary-light); }
+    .dropzone-icon { width: 48px; height: 48px; border-radius: 12px; background: var(--primary-light); color: var(--primary); display: grid; place-items: center; font-size: 22px; margin: 0 auto 10px; }
+    .dropzone-text { font-size: 14px; font-weight: 500; color: var(--ink); } .dropzone-hint { font-size: 11px; color: var(--soft); margin-top: 4px; }
+
+    .file-list { display: flex; flex-direction: column; gap: 8px; height: 220px; min-height: 88px; max-height: 58vh; overflow-y: auto; resize: vertical; padding-right: 2px; }
+    .file-row { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: var(--radius-sm); background: var(--surface-2); font-size: 12px; }
+    .file-row .file-name { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--ink-2); }
+    .file-row .file-size { color: var(--soft); font-size: 11px; flex-shrink: 0; }
+    .file-row .file-remove { color: var(--soft); font-size: 14px; line-height: 1; padding: 2px 6px; border-radius: 4px; transition: all .15s; }
+    .file-row .file-remove:hover { color: var(--danger); background: var(--danger-light); }
+    .file-card { border: 1px solid var(--line-soft); border-radius: var(--radius-sm); background: var(--surface-2); overflow: hidden; transition: border-color .15s, background .15s, box-shadow .15s; }
+    .file-card[open] { border-color: var(--line); background: #fff; box-shadow: 0 6px 16px rgba(17,24,39,.04); }
+    .file-card-head { list-style: none; display: flex; align-items: center; gap: 8px; padding: 9px 10px; cursor: pointer; font-size: 12px; }
+    .file-card-head::-webkit-details-marker { display: none; }
+    .file-card-head::before { content: "›"; color: var(--soft); font-weight: 700; transform: rotate(0deg); transition: transform .15s; }
+    .file-card[open] .file-card-head::before { transform: rotate(90deg); }
+    .file-card .file-name { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: var(--ink-2); font-weight: 600; }
+    .file-card .file-size { color: var(--soft); font-size: 11px; flex-shrink: 0; }
+    .file-edit-hint { color: var(--primary); background: var(--primary-light); border: 1px solid rgba(26,115,232,.12); border-radius: 999px; padding: 2px 7px; font-size: 10px; font-weight: 700; white-space: nowrap; }
+    .file-card .file-remove { color: var(--soft); font-size: 16px; line-height: 1; padding: 2px 7px; border-radius: 6px; transition: all .15s; }
+    .file-card .file-remove:hover { color: var(--danger); background: var(--danger-light); }
+    .file-list-hint { color: var(--muted); background: var(--primary-light); border: 1px solid rgba(26,115,232,.12); border-radius: var(--radius-sm); padding: 9px 10px; font-size: 11px; line-height: 1.5; }
+    .file-param-note { padding: 8px 10px 0; color: var(--soft); font-size: 10px; line-height: 1.4; border-top: 1px solid var(--line-soft); }
+    .file-param-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; height: 116px; min-height: 86px; max-height: 260px; overflow: auto; resize: vertical; align-content: start; padding: 10px; }
+    .file-param { display: flex; flex-direction: column; gap: 4px; min-width: 0; color: var(--soft); font-size: 11px; font-weight: 600; }
+    .file-param input { width: 100%; height: 30px; border: 1px solid var(--line); border-radius: 6px; padding: 0 8px; background: #fff; color: var(--ink); font-family: var(--font-mono); font-size: 12px; font-weight: 700; text-align: right; }
+    .file-param input:focus { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(26,115,232,.12); }
+    .file-empty { text-align: center; color: var(--soft); font-size: 12px; padding: 16px 0; }
+
+    .param-row { display: flex; align-items: center; gap: 10px; height: 40px; padding: 0 12px; border-radius: var(--radius-sm); background: var(--surface-2); }
+    .param-row label { font-size: 13px; font-weight: 500; color: var(--ink-2); white-space: nowrap; }
+    .param-row input { margin-left: auto; width: 90px; height: 30px; border: 1px solid var(--line); border-radius: 6px; padding: 0 8px; font-size: 13px; font-weight: 600; font-family: var(--font-mono); color: var(--ink); text-align: right; background: #fff; }
+    .param-row input:focus { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(26,115,232,.12); }
+    .sb-hint { font-size: 11px; color: var(--muted); line-height: 1.6; padding: 10px 12px; border-radius: var(--radius-sm); background: var(--surface-2); border: 1px solid var(--line-soft); }
+    .ghost-btn { width: 100%; height: 34px; border-radius: var(--radius-sm); background: var(--surface-2); border: 1px solid var(--line); color: var(--ink-2); font-size: 12px; font-weight: 700; transition: background .15s, border-color .15s, color .15s; }
+    .ghost-btn:hover { background: var(--primary-light); border-color: rgba(26,115,232,.18); color: var(--primary); }
+    .sb-status { font-size: 12px; color: var(--muted); padding: 4px 0; line-height: 1.5; min-height: 18px; }
+
+    .diag-btn { width: 100%; height: 48px; border-radius: var(--radius-lg); background: var(--primary); color: #fff; font-size: 15px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: auto; transition: filter .15s, transform .1s; }
+    .diag-btn:hover { filter: brightness(1.08); } .diag-btn:active { transform: scale(.98); } .diag-btn:disabled { opacity: .6; cursor: wait; filter: none; transform: none; }
+
+    .main { padding: 20px; display: flex; flex-direction: column; gap: 20px; overflow-y: auto; }
+    .page-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+    .page-title { font-size: 22px; font-weight: 600; color: var(--ink); letter-spacing: -0.01em; }
+    .page-meta { font-size: 13px; color: var(--soft); margin-top: 4px; }
+
+    .result-switcher { display: flex; gap: 8px; flex-wrap: wrap; padding: 6px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow-soft); }
+    .result-chip { display: inline-flex; align-items: center; gap: 8px; padding: 8px 14px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 500; color: var(--muted); background: transparent; transition: all .15s; }
+    .result-chip:hover:not(.active) { background: var(--line-soft); }
+    .result-chip.active { background: var(--primary); color: #fff; font-weight: 600; }
+    .result-chip .lvl-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
+    .kpi-card { background: var(--surface); border-radius: var(--radius-lg); padding: 24px; display: flex; flex-direction: column; gap: 12px; border: 1px solid rgba(219,227,238,.9); box-shadow: var(--shadow-soft); transition: transform .15s, box-shadow .15s; }
+    .kpi-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-card); }
+    .kpi-label { font-size: 12px; font-weight: 600; color: var(--soft); text-transform: uppercase; letter-spacing: 0.03em; }
+    .kpi-value-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .kpi-value { font-size: 32px; font-weight: 700; color: var(--ink); letter-spacing: -0.02em; }
+    .kpi-badge { padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: 600; }
+    .kpi-badge.good { background: var(--primary-light); color: var(--primary); }
+    .kpi-badge.success { background: var(--success-light); color: var(--success); }
+    .kpi-badge.warn { background: var(--warning-light); color: var(--warning-text); }
+    .kpi-badge.danger { background: var(--danger-light); color: var(--danger); }
+    .kpi-sub { font-size: 11px; font-weight: 500; color: var(--soft); }
+
+    .health-badge { display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; border-radius: 8px; font-size: 18px; font-weight: 700; }
+    .health-badge .dot { width: 12px; height: 12px; border-radius: 50%; }
+    .health-badge.l1 { background: var(--primary-light); color: var(--primary); } .health-badge.l1 .dot { background: var(--primary); }
+    .health-badge.l2 { background: var(--success-light); color: var(--success); } .health-badge.l2 .dot { background: var(--success); }
+    .health-badge.l3 { background: var(--warning-light); color: var(--warning-text); } .health-badge.l3 .dot { background: var(--warning); }
+    .health-badge.l4, .health-badge.l5 { background: var(--danger-light); color: var(--danger); } .health-badge.l4 .dot, .health-badge.l5 .dot { background: var(--danger); }
+
+    .evidence-strip { background: var(--surface); border-radius: var(--radius-lg); padding: 20px; display: flex; align-items: center; gap: 20px; border: 1px solid var(--line); flex-wrap: wrap; }
+    .evidence-label { font-size: 12px; font-weight: 600; color: var(--soft); white-space: nowrap; }
+    .evidence-div { width: 1px; height: 24px; background: var(--line); }
+    .evidence-items { display: flex; align-items: center; gap: 18px; flex: 1; flex-wrap: wrap; }
+    .evidence-item { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: 500; color: var(--ink-2); font-family: var(--font-mono); }
+    .evidence-bar { height: 6px; border-radius: 3px; }
+    .evidence-bar.primary { background: var(--primary); } .evidence-bar.success { background: var(--success); }
+    .evidence-bar.warn { background: var(--warning); } .evidence-bar.danger { background: var(--danger); } .evidence-bar.muted { background: var(--soft); }
+
+    .detail-row { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 20px; }
+    .main-card { background: var(--surface); border-radius: var(--radius-lg); border: 1px solid rgba(219,227,238,.9); padding: 24px; display: flex; flex-direction: column; gap: 20px; box-shadow: var(--shadow-soft); }
+    .card-header { display: flex; align-items: center; justify-content: space-between; }
+    .card-title { font-size: 15px; font-weight: 600; color: var(--ink); } .card-meta { font-size: 11px; color: var(--soft); }
+
+    .section-tabs { display: flex; gap: 8px; flex-wrap: wrap; }
+    .section-tab { padding: 10px 14px; border-radius: var(--radius-sm); font-size: 13px; font-weight: 600; color: var(--muted); background: var(--line-soft); transition: background .15s, color .15s, transform .1s; }
+    .section-tab:hover { background: #E8EEF7; }
+    .section-tab.active { background: var(--primary); color: #fff; box-shadow: 0 8px 18px rgba(26,115,232,.18); }
+    .section-tab:active { transform: translateY(1px); }
+    .view { display: none; }
+    .view.active { display: block; }
+
+    .metric-grid { display: flex; flex-direction: column; gap: 12px; }
+    .metric-hint { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; color: var(--muted); background: var(--primary-light); border: 1px solid rgba(26,115,232,.12); border-radius: var(--radius-sm); padding: 10px 12px; font-size: 12px; line-height: 1.5; }
+    .metric-hint strong { color: var(--primary); font-weight: 700; }
+    .metric-details { border: 1px solid transparent; border-radius: var(--radius); background: var(--surface-2); overflow: hidden; transition: border-color .15s, box-shadow .15s, background .15s; }
+    .metric-details[open] { border-color: var(--line); background: #fff; box-shadow: 0 10px 28px rgba(17,24,39,.05); }
+    .metric-summary { list-style: none; cursor: pointer; display: block; }
+    .metric-summary::-webkit-details-marker { display: none; }
+    .metric-row { display: flex; align-items: center; gap: 16px; padding: 16px; border-radius: var(--radius-sm); background: transparent; }
+    .metric-indicator { width: 4px; height: 40px; border-radius: 2px; flex-shrink: 0; }
+    .metric-indicator.good { background: var(--primary); } .metric-indicator.success { background: var(--success); }
+    .metric-indicator.warn { background: var(--warning); } .metric-indicator.danger { background: var(--danger); }
+    .metric-info { flex: 1; min-width: 0; }
+    .metric-name { font-size: 14px; font-weight: 600; color: var(--ink); } .metric-desc { font-size: 12px; color: var(--muted); margin-top: 2px; }
+    .metric-score { text-align: right; flex-shrink: 0; }
+    .metric-val { font-size: 20px; font-weight: 700; color: var(--ink); font-family: var(--font-mono); }
+    .metric-level { display: inline-block; padding: 4px 8px; border-radius: 6px; font-size: 11px; font-weight: 600; margin-top: 4px; }
+    .metric-level.good { background: var(--primary-light); color: var(--primary); } .metric-level.success { background: var(--success-light); color: var(--success); }
+    .metric-level.warn { background: var(--warning-light); color: var(--warning-text); } .metric-level.danger { background: var(--danger-light); color: var(--danger); }
+    .metric-expand { width: 28px; height: 28px; display: grid; place-items: center; border-radius: 999px; color: var(--muted); background: #EEF2F7; font-size: 18px; font-weight: 700; flex-shrink: 0; transition: transform .15s, background .15s, color .15s; }
+    .metric-details[open] .metric-expand { transform: rotate(45deg); background: var(--primary-light); color: var(--primary); }
+    .metric-detail-body { border-top: 1px solid var(--line-soft); padding: 16px 18px 18px 40px; display: grid; gap: 14px; }
+    .metric-detail-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+    .metric-detail-chip { background: var(--surface-2); border: 1px solid var(--line-soft); border-radius: var(--radius-sm); padding: 10px 12px; min-width: 0; }
+    .metric-detail-chip span { display: block; font-size: 11px; font-weight: 600; color: var(--soft); margin-bottom: 4px; }
+    .metric-detail-chip strong { display: block; color: var(--ink); font-size: 13px; line-height: 1.5; word-break: break-word; }
+    .metric-note { color: var(--muted); font-size: 13px; line-height: 1.7; }
+    .metric-note strong { color: var(--ink); }
+    .metric-evidence-table { font-size: 12px; }
+    .metric-evidence-table th, .metric-evidence-table td { padding: 8px 10px; }
+
+    .aux-bar { width: 100%; height: 1px; background: var(--line-soft); }
+    .aux-title { font-size: 12px; font-weight: 600; color: var(--soft); }
+    .aux-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+    .aux-item { padding: 12px; border-radius: var(--radius-sm); background: var(--surface-2); text-align: center; }
+    .aux-val { font-size: 18px; font-weight: 700; color: var(--ink); font-family: var(--font-mono); }
+    .aux-lbl { font-size: 11px; font-weight: 500; color: var(--soft); margin-top: 4px; }
+
+    .chart-wrap { min-height: 100px; border-radius: var(--radius-sm); background: var(--surface-2); display: flex; align-items: center; justify-content: center; color: var(--soft); font-size: 13px; }
+    .curve-panel { margin-top: 14px; border: 1px solid var(--line-soft); border-radius: var(--radius); background: #fff; box-shadow: 0 10px 28px rgba(15, 23, 42, .045); overflow: hidden; }
+    .curve-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 16px 0; }
+    .curve-title { font-size: 13px; font-weight: 700; color: var(--ink); }
+    .curve-legend { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; justify-content: flex-end; font-size: 11px; color: var(--muted); }
+    .curve-chip { display: inline-flex; align-items: center; gap: 6px; padding: 5px 8px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--line-soft); white-space: nowrap; }
+    .curve-chip::before { content: ""; width: 18px; height: 3px; border-radius: 999px; background: var(--chip-color, #2563eb); }
+    .curve-chip.warn { color: #b45309; background: #fffbeb; border-color: #fde68a; }
+    .curve-chip.danger { color: var(--danger); background: var(--danger-light); border-color: #fecaca; }
+    .curve-scroll { width: 100%; overflow-x: auto; overflow-y: hidden; padding: 6px 16px 14px; }
+    .curve-scroll canvas { min-width: 1320px; width: max(100%, 1320px); height: 360px; display: block; border-radius: var(--radius-sm); }
+
+    .rule-summary-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+    .rule-summary-card { background: var(--surface-2); border: 1px solid var(--line-soft); border-radius: var(--radius-sm); padding: 10px; text-align: center; }
+    .rule-summary-card strong { display: block; font-family: var(--font-mono); font-size: 20px; color: var(--ink); line-height: 1.1; }
+    .rule-summary-card span { display: block; margin-top: 4px; color: var(--soft); font-size: 11px; }
+    .rule-list { display: flex; flex-direction: column; gap: 10px; }
+    .rule-item { display: flex; flex-direction: column; gap: 8px; padding: 12px; border: 1px solid var(--line-soft); border-radius: var(--radius-sm); background: var(--surface-2); }
+    .rule-item.hit { background: #FFF8F7; border-color: #FFD1CB; }
+    .rule-item.ok { background: #F7FBF8; border-color: #D8EFDE; }
+    .rule-code { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 12px; font-weight: 700; color: var(--ink); }
+    .rule-code code { font-family: var(--font-mono); color: var(--soft); }
+    .rule-severity { padding: 3px 8px; border-radius: 999px; font-size: 10px; background: var(--danger-light); color: var(--danger); }
+    .rule-desc { font-size: 12px; color: var(--muted); line-height: 1.65; }
+    .rule-status { display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 500; }
+    .rule-status .dot { width: 6px; height: 6px; border-radius: 50%; }
+    .rule-status.pass { color: var(--success); } .rule-status.pass .dot { background: var(--success); }
+    .rule-status.fail { color: var(--danger); } .rule-status.fail .dot { background: var(--danger); }
+    .rule-divider { height: 1px; background: var(--line-soft); }
+
+    /* 缩放控制 */
+    .zoom-ctl { display: inline-flex; align-items: center; gap: 6px; padding: 0 4px; }
+    .zoom-label { font-size: 11px; font-weight: 600; color: var(--soft); white-space: nowrap; }
+    .zoom-pct { font-size: 11px; font-weight: 600; color: var(--ink-2); min-width: 32px; text-align: center; font-family: var(--font-mono); }
+    .zoom-btn { width: 24px; height: 24px; border-radius: 6px; border: 1px solid var(--line); background: var(--surface); color: var(--ink-2); font-size: 14px; font-weight: 600; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all .12s; line-height: 1; }
+    .zoom-btn:hover { background: var(--primary-light); border-color: var(--primary); color: var(--primary); }
+    .zoom-slider { width: 80px; height: 4px; -webkit-appearance: none; appearance: none; background: var(--line); border-radius: 4px; outline: none; }
+    .zoom-slider::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 14px; height: 14px; border-radius: 50%; background: var(--primary); cursor: pointer; border: 2px solid #fff; box-shadow: 0 1px 3px rgba(0,0,0,.15); }
+    .zoom-reset { font-size: 10px; font-weight: 600; color: var(--primary); padding: 2px 8px; border-radius: 4px; background: var(--primary-light); cursor: pointer; transition: all .12s; }
+    .zoom-reset:hover { background: #dce8fc; }
+
+    /* 规则卡片折叠 */
+    .rules-panel { background: var(--surface); border-radius: var(--radius-lg); border: 1px solid rgba(219,227,238,.9); padding: 20px; display: flex; flex-direction: column; gap: 16px; align-self: start; box-shadow: var(--shadow-soft); }
+    .rp-header { display: flex; align-items: center; justify-content: space-between; cursor: pointer; user-select: none; padding: 2px 0; }
+    .rp-header:hover .rp-title { color: var(--primary); }
+    .rp-title { font-size: 14px; font-weight: 600; color: var(--ink); display: flex; align-items: center; gap: 6px; }
+    .rp-toggle { font-size: 12px; color: var(--soft); transition: transform .2s; }
+    .rp-toggle.open { transform: rotate(90deg); }
+    .rp-count { padding: 4px 12px; border-radius: 999px; font-size: 10px; font-weight: 600; }
+    .rp-count.clear { background: var(--success-light); color: var(--success); } .rp-count.alert { background: var(--warning-light); color: var(--warning-text); } .rp-count.danger { background: var(--danger-light); color: var(--danger); }
+    .rule-list-collapse { overflow: hidden; max-height: 0; transition: max-height .3s ease; }
+    .rule-list-collapse.open { max-height: 2000px; }
+    .segment-panel { border-top: 1px solid var(--line-soft); padding-top: 14px; display: grid; gap: 10px; }
+    .segment-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .segment-title { font-size: 13px; font-weight: 700; color: var(--ink); }
+    .segment-count { padding: 3px 8px; border-radius: 999px; background: var(--line-soft); color: var(--muted); font-size: 10px; font-weight: 700; }
+    .segment-list { display: grid; gap: 8px; max-height: 360px; overflow: auto; padding-right: 2px; }
+    .segment-item { width: 100%; text-align: left; border: 1px solid var(--line-soft); background: var(--surface-2); border-radius: var(--radius-sm); padding: 10px 11px; display: grid; gap: 6px; cursor: pointer; transition: border-color .15s, background .15s, transform .1s; }
+    .segment-item:hover { background: #fff; border-color: rgba(26,115,232,.35); transform: translateY(-1px); }
+    .segment-item.active { background: #EFF6FF; border-color: var(--primary); box-shadow: 0 8px 18px rgba(26,115,232,.10); }
+    .segment-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .segment-name { font-size: 12px; font-weight: 700; color: var(--ink); }
+    .segment-badge { padding: 2px 7px; border-radius: 999px; font-size: 10px; font-weight: 700; }
+    .segment-badge.danger { color: var(--danger); background: var(--danger-light); }
+    .segment-badge.warn { color: var(--warning-text); background: var(--warning-light); }
+    .segment-time { color: var(--muted); font-size: 11px; line-height: 1.5; }
+    .segment-empty { color: var(--soft); font-size: 12px; line-height: 1.6; padding: 10px; border-radius: var(--radius-sm); background: var(--surface-2); border: 1px dashed var(--line); }
+
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    th, td { padding: 10px 12px; border-bottom: 1px solid var(--line-soft); text-align: left; }
+    th { color: var(--soft); font-weight: 600; font-size: 12px; background: var(--surface-2); }
+    tr:last-child td, tr:last-child th { border-bottom: 0; }
+    .sub-grid { display: grid; grid-template-columns: minmax(0, 1.16fr) minmax(320px, .84fr); gap: 16px; }
+    .subpanel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; }
+    .subpanel h3 { font-size: 15px; font-weight: 600; color: var(--ink); margin-bottom: 12px; }
+
+    .links-row { display: flex; gap: 8px; flex-wrap: wrap; }
+    .link-pill { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 999px; font-size: 12px; font-weight: 600; color: var(--primary); background: var(--primary-light); text-decoration: none; transition: all .15s; border: 0; cursor: pointer; }
+    .link-pill:hover { background: #dce8fc; } .link-pill.muted { color: var(--muted); background: var(--line-soft); } .link-pill.muted:hover { background: #e8ebf2; }
+    .ai-panel { display: none; border: 1px solid rgba(26,115,232,.16); background: linear-gradient(180deg, #F8FBFF 0%, #FFFFFF 100%); border-radius: var(--radius); padding: 16px; box-shadow: 0 12px 30px rgba(26,115,232,.06); }
+    .ai-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+    .ai-title { font-size: 14px; font-weight: 700; color: var(--ink); }
+    .ai-meta { display: block; margin-top: 3px; font-size: 11px; color: var(--soft); font-weight: 500; }
+    .ai-output { word-break: break-word; margin: 0; padding: 12px; min-height: 80px; max-height: 300px; overflow: auto; border-radius: var(--radius-sm); background: #fff; border: 1px solid var(--line-soft); color: var(--ink-2); font-size: 13px; line-height: 1.65; font-family: var(--font-sans); }
+    .ai-output.loading { color: var(--soft); }
+    .ai-summary-list { display: grid; gap: 10px; }
+    .ai-point { display: grid; grid-template-columns: 54px minmax(0, 1fr); gap: 10px; padding: 12px; border: 1px solid var(--line-soft); border-radius: var(--radius-sm); background: var(--surface-2); }
+    .ai-point strong { color: var(--primary); font-size: 12px; font-weight: 700; white-space: nowrap; }
+    .ai-point span { color: var(--ink-2); font-size: 13px; line-height: 1.7; }
+    .ai-point.conclusion { background: #EFF6FF; border-color: #BFDBFE; }
+    .ai-point.action { background: #FFF7ED; border-color: #FED7AA; }
+    .link-pill:disabled { opacity: .55; cursor: wait; }
+
+    .empty-state { display: grid; place-items: center; min-height: 400px; color: var(--soft); text-align: center; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-lg); }
+    .empty-state .icon { width: 64px; height: 64px; border-radius: 16px; background: var(--primary-light); color: var(--primary); display: grid; place-items: center; font-size: 28px; margin: 0 auto 16px; }
+    .empty-state h2 { font-size: 20px; font-weight: 600; color: var(--ink); margin-bottom: 8px; }
+    .empty-state p { font-size: 14px; color: var(--muted); max-width: 480px; line-height: 1.7; }
+
+    .batch-progress { background: var(--primary-light); border: 1px solid var(--primary); border-radius: var(--radius); padding: 16px 20px; display: none; align-items: center; gap: 16px; }
+    .batch-progress .spinner { width: 20px; height: 20px; border: 2.5px solid var(--primary); border-top-color: transparent; border-radius: 50%; animation: spin 0.8s linear infinite; flex-shrink: 0; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .batch-progress .text { font-size: 14px; color: var(--ink); font-weight: 500; }
+    .batch-progress .sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+    @media (max-width: 1200px) { .shell { grid-template-columns: 1fr; } .sidebar { border-right: none; border-bottom: 1px solid var(--line); } .detail-row { grid-template-columns: 1fr; } .kpi-row { grid-template-columns: repeat(2, 1fr); } .aux-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 640px) { .kpi-row, .aux-grid, .sub-grid, .metric-detail-grid, .rule-summary-grid { grid-template-columns: 1fr; } .topnav { padding: 0 16px; } .app-title { font-size: 15px; } .main { padding: 14px; gap: 14px; } }
+  </style>
+</head>
+<body>
+
+<nav class="topnav">
+  <div class="nav-left">
+    <div class="logo" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none">
+        <path d="M7 5.5h10a2.5 2.5 0 0 1 2.5 2.5v8A2.5 2.5 0 0 1 17 18.5H7A2.5 2.5 0 0 1 4.5 16V8A2.5 2.5 0 0 1 7 5.5Z" stroke="white" stroke-width="1.7"/>
+        <path d="M8 14.5c1.1-1.7 2.1-3.7 3.1-6l2.5 7 1.7-3h2.2" stroke="white" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <div class="brand-copy">
+      <span class="app-title">燃气调压器健康诊断系统</span>
+      <span class="app-subtitle">核心性能评价 · 压力采样分析 · 诊断报告生成</span>
+    </div>
+  </div>
+  <div class="nav-right">
+    <span class="status-pill"><span class="status-dot" id="navDot"></span><span class="status-label" id="navStatus">系统就绪</span></span>
+    <a class="nav-link" href="/rules">判定规则</a>
+  </div>
+</nav>
+
+<div class="shell">
+  <aside class="sidebar">
+    <span class="sb-title">导入数据</span>
+    <div class="sb-section">
+      <div class="dropzone" id="dropzone">
+        <div class="dropzone-icon">⤴</div>
+        <div class="dropzone-text">点击或拖拽文件至此处</div>
+        <div class="dropzone-hint">支持 .csv / .xlsx / .xls · 批量多选</div>
+        <input type="file" id="uploadInput" accept=".csv,.xlsx,.xls" multiple style="display:none" />
+      </div>
+      <div class="file-list" id="fileList"><div class="file-empty">尚未选择文件</div></div>
+      <div class="file-list-hint">提示：点击文件行可展开，单独调整这一组数据的判定参数。</div>
+    </div>
+
+    <div class="sb-section">
+      <span class="sb-title">判定参数</span>
+      <div class="param-row"><label>设定压力</label><input id="setPressure" type="number" step="0.001" value="2.5" /></div>
+      <div class="param-row"><label>稳压精度 AC %</label><input id="acKpa" type="number" step="0.1" value="10" /></div>
+      <div class="param-row"><label>关闭压力 SG %</label><input id="sgKpa" type="number" step="0.1" value="20" /></div>
+      <div class="param-row"><label>极值点数 N</label><input id="extremeSampleN" type="number" step="1" min="1" value="20" /></div>
+      <div class="param-row"><label>进口压力波动 %</label><input id="inletMaxFluct" type="number" step="0.1" value="5" /></div>
+      <div class="param-row"><label>泄漏量限值</label><input id="seatLeakLimit" type="number" step="0.001" value="0.2" /></div>
+      <div class="param-row"><label>压力估算限值</label><input id="seatLeakSurrogateLimit" type="number" step="0.001" value="0.5" /></div>
+      <div class="sb-hint" id="thresholdPreview"></div>
+      <button class="ghost-btn" id="applyParamsAll" type="button">应用当前参数到全部文件</button>
+      <div class="sb-status" id="status"></div>
+    </div>
+
+    <button class="diag-btn" id="diagnoseBtn"><span>▶</span> <span id="diagBtnLabel">开始诊断</span></button>
+  </aside>
+
+  <main class="main">
+    <div class="page-header">
+      <div><h1 class="page-title">诊断概览</h1><div class="page-meta" id="pageMeta">导入数据文件后开始诊断</div></div>
+      <div class="zoom-ctl">
+        <span class="zoom-label">缩放</span>
+        <button class="zoom-btn" onclick="adjustZoom(-5)" title="缩小">-</button>
+        <input type="range" class="zoom-slider" id="zoomSlider" min="60" max="120" value="75" oninput="setZoom(this.value)" title="拖动调整缩放比例" />
+        <span class="zoom-pct" id="zoomPct">75%</span>
+        <button class="zoom-btn" onclick="adjustZoom(5)" title="放大">+</button>
+        <span class="zoom-reset" onclick="setZoom(75)" title="恢复默认比例">重置</span>
+      </div>
+      <div class="result-switcher" id="resultSwitcher" style="display:none"></div>
+    </div>
+
+    <div class="batch-progress" id="batchProgress">
+      <div class="spinner"></div><div><div class="text" id="batchProgressText">正在诊断…</div><div class="sub" id="batchProgressSub"></div></div>
+    </div>
+
+    <div class="kpi-row" id="kpiRow" style="display:none">
+      <div class="kpi-card"><div class="kpi-label">健康等级</div><div class="kpi-value-row"><div class="health-badge l1" id="healthBadge"><span class="dot"></span>—</div><div class="kpi-value" id="riskScore">—</div></div><div class="kpi-sub" id="healthSub">等待诊断数据</div></div>
+      <div class="kpi-card"><div class="kpi-label">稳压性能 P01</div><div class="kpi-value-row"><div class="kpi-value" id="p01Val">—</div><div class="kpi-badge good" id="p01Badge">—</div></div><div class="kpi-sub">实际AC / 出厂AC</div></div>
+      <div class="kpi-card"><div class="kpi-label">关闭压力 P02</div><div class="kpi-value-row"><div class="kpi-value" id="p02Val">—</div><div class="kpi-badge good" id="p02Badge">—</div></div><div class="kpi-sub">实际SG / 出厂SG</div></div>
+      <div class="kpi-card"><div class="kpi-label">阀座密封 P03</div><div class="kpi-value-row"><div class="kpi-value" id="p03Val">—</div><div class="kpi-badge warn" id="p03Badge">—</div></div><div class="kpi-sub" id="p03Sub">密封爬升指数 / 泄漏量</div></div>
+    </div>
+
+    <div class="detail-row" id="detailRow" style="display:none">
+      <div class="main-card" id="mainCard">
+        <div class="card-header"><span class="card-title" id="cardTitle">核心性能指标详情</span><span class="card-meta" id="cardMeta"></span></div>
+
+        <div class="section-tabs" id="sectionTabs">
+          <button class="section-tab active" data-view="core">核心性能指标详情</button>
+          <button class="section-tab" data-view="aux">辅助证据</button>
+          <button class="section-tab" data-view="quality">导入识别</button>
+        </div>
+
+        <div class="view active" id="view-core">
+          <div class="metric-hint"><strong>可展开</strong><span>点击每个核心指标右侧的 +，查看计算过程、判定倍率和校核证据。</span></div>
+          <div class="metric-grid" id="metricGrid"></div>
+          <div class="aux-bar" style="margin:16px 0 12px;"></div>
+          <span class="aux-title">辅助参考指标</span>
+          <div class="aux-grid" id="auxGrid">
+            <div class="aux-item"><div class="aux-val" id="auxMean">—</div><div class="aux-lbl">均值 kPa</div></div>
+            <div class="aux-item"><div class="aux-val" id="auxStd">—</div><div class="aux-lbl">标准差 σ</div></div>
+            <div class="aux-item"><div class="aux-val" id="auxCv">—</div><div class="aux-lbl">变异系数 CV</div></div>
+            <div class="aux-item"><div class="aux-val" id="auxCount">—</div><div class="aux-lbl">数据点数</div></div>
+          </div>
+          <div class="curve-panel">
+            <div class="curve-head">
+              <span class="curve-title">压力运行曲线 kPa</span>
+              <div class="curve-legend" id="curveLegend"></div>
+            </div>
+            <div class="curve-scroll">
+              <canvas id="curveCanvas"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <div class="view" id="view-aux">
+          <div class="sub-grid">
+            <div class="subpanel"><h3>辅助证据</h3><table id="auxEvidence"></table></div>
+            <div class="subpanel"><h3>判定依据</h3><table id="auxDecisions"></table></div>
+          </div>
+        </div>
+
+        <div class="view" id="view-quality">
+          <div class="subpanel"><h3>导入识别</h3><table id="qualityTable"></table></div>
+        </div>
+
+        <div class="ai-panel" id="aiPanel">
+          <div class="ai-head">
+            <div>
+              <span class="ai-title">智能分析意见</span>
+              <span class="ai-meta" id="aiMeta">基于当前诊断结果生成，不参与等级判定</span>
+            </div>
+            <button class="link-pill" id="aiAnalysisBtn" type="button">生成分析意见</button>
+          </div>
+          <div class="ai-output" id="aiOutput">完成诊断后，可生成一段面向报告说明的分析意见。</div>
+        </div>
+
+        <div class="links-row" id="linksRow"></div>
+      </div>
+
+      <div class="rules-panel" id="rulesPanel">
+        <div class="rp-header" onclick="toggleRules()" title="点击展开/收起规则详情">
+          <span class="rp-title"><span class="rp-toggle" id="rpToggle">&#9654;</span> 规则触发</span>
+          <span class="rp-count clear" id="rpCount">0 条</span>
+        </div>
+        <div id="ruleItems"></div>
+        <div class="segment-panel" id="segmentPanel">
+          <div class="segment-head">
+            <span class="segment-title">异常片段定位</span>
+            <span class="segment-count" id="segmentCount">0 段</span>
+          </div>
+          <div class="segment-list" id="segmentList">
+            <div class="segment-empty">完成诊断后显示可定位的压力异常片段。</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="empty-state" id="emptyState">
+      <div><div class="icon">📂</div><h2>导入数据开始诊断</h2><p>支持批量上传 CSV / Excel 数据文件，自动调用三项核心性能评价、辅助异常检测和规则引擎，输出可追溯诊断报告。</p></div>
+    </div>
+  </main>
+</div>
+
+<script>
+let fileQueue = [];
+let batchResults = [];
+let activeResultIdx = 0;
+let lastResult = null;
+let selectedCurveSegment = null;
+
+const $ = function(id) { return document.getElementById(id); };
+const esc = function(v) { return String(v ?? "").replace(/[&<>"']/g, function(ch) { return ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[ch]; }); };
+function fmt(v, d) { d = d || 3; if (v === null || v === undefined || Number.isNaN(Number(v))) return ""; return Number(v).toFixed(d); }
+
+function setStatus(text, top) {
+  $("status").textContent = text || "";
+  if (top) { $("navStatus").textContent = text ? text.slice(0,30) : "系统就绪"; $("navDot").style.background = text ? (text.includes("失败")?"#EA4335":text.includes("完成")?"#34A853":"#FBBC04") : "#34A853"; }
+}
+
+function performanceParams() {
+  return {
+    set_pressure_kpa: $("setPressure").value,
+    ac_percent: $("acKpa").value,
+    sg_percent: $("sgKpa").value,
+    extreme_sample_n: $("extremeSampleN").value,
+    inlet_pressure_max_fluctuation_percent: $("inletMaxFluct").value,
+    seat_leak_limit: $("seatLeakLimit").value,
+    seat_leak_surrogate_limit_kpa: $("seatLeakSurrogateLimit").value
+  };
+}
+
+function clonePerformanceParams(params) {
+  var p = params || performanceParams();
+  return {
+    set_pressure_kpa: p.set_pressure_kpa || "2.5",
+    ac_percent: p.ac_percent || "10",
+    sg_percent: p.sg_percent || "20",
+    extreme_sample_n: p.extreme_sample_n || "20",
+    inlet_pressure_max_fluctuation_percent: p.inlet_pressure_max_fluctuation_percent || "5",
+    seat_leak_limit: p.seat_leak_limit || "0.2",
+    seat_leak_surrogate_limit_kpa: p.seat_leak_surrogate_limit_kpa || "0.5"
+  };
+}
+
+function fileParamInput(idx, key, label, value, step) {
+  return '<label class="file-param"><span>' + esc(label) + '</span>' +
+    '<input type="number" step="' + esc(step) + '" value="' + esc(value) + '" data-file-idx="' + idx + '" data-param-key="' + esc(key) + '" />' +
+  '</label>';
+}
+
+function applyGlobalParamsToFiles() {
+  if (!fileQueue.length) { setStatus("尚未选择文件", true); return; }
+  var p = clonePerformanceParams(performanceParams());
+  fileQueue.forEach(function(entry) { entry.params = clonePerformanceParams(p); });
+  renderFileList();
+  setStatus("已将当前参数应用到全部文件", true);
+}
+
+function updateThresholdPreview() {
+  var p = performanceParams();
+  var setPressure = Number(p.set_pressure_kpa || 0);
+  var acPercent = Number(p.ac_percent || 0);
+  var sgPercent = Number(p.sg_percent || 0);
+  var acLimit = setPressure * acPercent / 100;
+  var sgLimit = setPressure * sgPercent / 100;
+  var leak = Number(p.seat_leak_limit || 0);
+  var surrogate = Number(p.seat_leak_surrogate_limit_kpa || 0);
+  $("thresholdPreview").innerHTML =
+    "AC" + fmt(acPercent,1) + " → 日间最高/最低N点测算实际AC%，合格线 ≤ " + fmt(acLimit,3) + " KPa<br>" +
+    "SG" + fmt(sgPercent,1) + " → 实测关闭压力测算实际SG%，合格线 ≤ " + fmt(sgLimit,3) + " KPa；进口压力波动前提 ≤ " + fmt(Number(p.inlet_pressure_max_fluctuation_percent || 5),1) + "%<br>" +
+    "阀座密封：有泄漏量列按泄漏量限值 " + fmt(leak,3) + " 判定；无泄漏量列按低流量片段密封爬升指数估算，压力估算限值上限 " + fmt(surrogate,3) + " KPa";
+}
+
+function fmtSize(b) { return b<1024?b+" B":b<1048576?(b/1024).toFixed(1)+" KB":(b/1048576).toFixed(1)+" MB"; }
+function healthDotColor(lv) { return !lv?"#9CA3AF":lv<=1?"#1A73E8":lv<=2?"#34A853":lv<=3?"#FBBC04":"#EA4335"; }
+function healthBadgeClass(lv) { return !lv?"l1":lv<=1?"l1":lv<=2?"l2":lv<=3?"l3":"l5"; }
+function levelBadgeClass(lv) { return !lv?"good":lv<=1?"good":lv<=2?"success":lv<=3?"warn":"danger"; }
+
+function metricValueText(item) {
+  if (!item || item.value === undefined) return "—";
+  return fmt(item.value, 4) + (item.unit ? " " + item.unit : "");
+}
+
+function metricEvidenceRows(item) {
+  var rows = (item.evidence_metrics || []).map(function(m) {
+    var unit = m.unit ? " " + esc(m.unit) : "";
+    return "<tr><td>" + esc(m.name) + "</td><td>" + esc(m.value) + unit + "</td></tr>";
+  }).join("");
+  return rows || '<tr><td colspan="2">暂无校核证据</td></tr>';
+}
+
+function formatCurveTick(date, spanMs, fallback) {
+  if (!(date instanceof Date) || Number.isNaN(date.getTime())) return fallback || "";
+  var pad = function(n) { return String(n).padStart(2, "0"); };
+  var hhmm = pad(date.getHours()) + ":" + pad(date.getMinutes());
+  if (spanMs >= 24 * 3600 * 1000) return (date.getMonth() + 1) + "-" + date.getDate() + " " + hhmm;
+  return hhmm;
+}
+
+function metricCard(item, idx) {
+  var cls = levelBadgeClass(item.level);
+  var conf = item.confidence || {};
+  var confText = (conf.label ? conf.label + "置信度" : "置信度") + (conf.score !== undefined ? " / " + conf.score : "");
+  var open = "";
+  return '<details class="metric-details"' + open + '>' +
+    '<summary class="metric-summary">' +
+      '<div class="metric-row">' +
+        '<div class="metric-indicator ' + cls + '"></div>' +
+        '<div class="metric-info">' +
+          '<div class="metric-name">' + esc(item.name) + ' (' + esc(item.code) + ')</div>' +
+          '<div class="metric-desc">' + esc(confText) + (conf.reason ? '，' + esc(conf.reason) : '') + '</div>' +
+        '</div>' +
+        '<div class="metric-score"><div class="metric-val">' + metricValueText(item) + '</div><div class="metric-level ' + cls + '">' + esc(item.level) + '级 ' + esc(item.label) + '</div></div>' +
+        '<span class="metric-expand">+</span>' +
+      '</div>' +
+    '</summary>' +
+    '<div class="metric-detail-body">' +
+      '<div class="metric-detail-grid">' +
+        '<div class="metric-detail-chip"><span>计算值</span><strong>' + metricValueText(item) + '</strong></div>' +
+        '<div class="metric-detail-chip"><span>参考值</span><strong>' + esc(item.reference || "") + '</strong></div>' +
+        '<div class="metric-detail-chip"><span>判定占比</span><strong>' + fmt((item.ratio || 0) * 100, 1) + '%</strong></div>' +
+        '<div class="metric-detail-chip"><span>占比公式</span><strong>(' + esc(item.ratio_formula || "计算值 / 参考限值") + ') × 100%</strong></div>' +
+        '<div class="metric-detail-chip"><span>风险分</span><strong>' + fmt(item.risk_score, 1) + '</strong></div>' +
+        '<div class="metric-detail-chip"><span>数据状态</span><strong>' + esc(item.confirmation_status === "pressure_surrogate" ? "压力采样估算" : item.confirmation_status === "low_flow_surrogate" ? "低流量窗口估算" : item.confirmation_status === "formal_closing_pressure" ? "关闭压力字段判定" : item.confirmation_status === "formal_leakage_amount" ? "泄漏量字段判定" : "压力采样判定") + '</strong></div>' +
+        '<div class="metric-detail-chip"><span>分级区间</span><strong>' + esc(item.threshold_desc || "") + '</strong></div>' +
+      '</div>' +
+      '<div class="metric-note"><strong>定义：</strong>' + esc(item.definition || "") + '</div>' +
+      '<div class="metric-note"><strong>计算公式：</strong>' + esc(item.formula || "") + '</div>' +
+      '<div class="metric-note"><strong>判定依据：</strong>' + esc(item.basis || "") + '</div>' +
+      '<div class="metric-note"><strong>判定方法：</strong>' + esc(item.method || "") + '</div>' +
+      '<table class="metric-evidence-table"><tr><th>校核证据</th><th>数值</th></tr>' + metricEvidenceRows(item) + '</table>' +
+    '</div>' +
+  '</details>';
+}
+
+function renderFileList() {
+  var list = $("fileList");
+  if (!fileQueue.length) { list.innerHTML = '<div class="file-empty">尚未选择文件</div>'; return; }
+  list.innerHTML = fileQueue.map(function(entry,i) {
+    var f = entry.file || entry;
+    var p = entry.params || clonePerformanceParams();
+    entry.params = p;
+    return '<details class="file-card">' +
+      '<summary class="file-card-head">' +
+        '<span class="file-name" title="' + esc(f.name) + '">' + esc(f.name) + '</span>' +
+        '<span class="file-edit-hint">展开改参数</span>' +
+        '<span class="file-size">' + fmtSize(f.size) + '</span>' +
+        '<button class="file-remove" data-idx="' + i + '" title="移除" type="button">&times;</button>' +
+      '</summary>' +
+      '<div class="file-param-note">可拖拽参数区域右下角调整高度，或在区域内滚动。</div>' +
+      '<div class="file-param-grid">' +
+        fileParamInput(i, "set_pressure_kpa", "设定压力", p.set_pressure_kpa, "0.001") +
+        fileParamInput(i, "ac_percent", "AC %", p.ac_percent, "0.1") +
+        fileParamInput(i, "sg_percent", "SG %", p.sg_percent, "0.1") +
+        fileParamInput(i, "extreme_sample_n", "极值点数N", p.extreme_sample_n, "1") +
+        fileParamInput(i, "inlet_pressure_max_fluctuation_percent", "进口波动%", p.inlet_pressure_max_fluctuation_percent, "0.1") +
+        fileParamInput(i, "seat_leak_limit", "泄漏限值", p.seat_leak_limit, "0.001") +
+        fileParamInput(i, "seat_leak_surrogate_limit_kpa", "压力估算限值", p.seat_leak_surrogate_limit_kpa, "0.001") +
+      '</div>' +
+    '</details>';
+  }).join("");
+  list.querySelectorAll(".file-remove").forEach(function(btn) {
+    btn.addEventListener("click", function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      fileQueue.splice(parseInt(btn.dataset.idx,10),1);
+      renderFileList();
+    });
+  });
+  list.querySelectorAll(".file-param input").forEach(function(input) {
+    input.addEventListener("input", function() {
+      var idx = parseInt(input.dataset.fileIdx, 10);
+      var key = input.dataset.paramKey;
+      if (!fileQueue[idx]) return;
+      if (!fileQueue[idx].params) fileQueue[idx].params = clonePerformanceParams();
+      fileQueue[idx].params[key] = input.value;
+    });
+  });
+}
+
+function addFiles(fileList) {
+  var defaults = clonePerformanceParams(performanceParams());
+  for (var i=0; i<fileList.length; i++) { var f=fileList[i], n=f.name.toLowerCase(); if (!n.endsWith(".csv")&&!n.endsWith(".xlsx")&&!n.endsWith(".xls")) continue; if (fileQueue.some(function(x){var xf=x.file||x;return xf.name===f.name&&xf.size===f.size;})) continue; fileQueue.push({file:f, params:clonePerformanceParams(defaults)}); }
+  renderFileList();
+}
+
+function drawCurve(canvas, values, startText, endText) {
+  if (!canvas||!values||!values.length) return;
+  var dpr=window.devicePixelRatio||1, rect=canvas.getBoundingClientRect();
+  canvas.width=Math.max(1,Math.floor(rect.width*dpr)); canvas.height=Math.max(1,Math.floor(rect.height*dpr));
+  var ctx=canvas.getContext("2d"); ctx.scale(dpr,dpr);
+  var w=rect.width, h=rect.height; ctx.clearRect(0,0,w,h);
+  var pad={l:46,r:18,t:22,b:48}, min=Math.min(1.8,Math.min.apply(null,values)), max=Math.max(3.2,Math.max.apply(null,values));
+  var x=function(i){return pad.l+i*(w-pad.l-pad.r)/Math.max(1,values.length-1);};
+  var y=function(v){return pad.t+(max-v)*(h-pad.t-pad.b)/Math.max(.001,max-min);};
+  var axisY=h-pad.b;
+  ctx.strokeStyle="#E5E7EB"; ctx.lineWidth=1;
+  [2.0,2.5,2.75,3.0].forEach(function(ref){if(ref<min||ref>max)return;var yy=y(ref);ctx.beginPath();ctx.moveTo(pad.l,yy);ctx.lineTo(w-pad.r,yy);ctx.stroke();ctx.fillStyle="#6B7280";ctx.font="11px sans-serif";ctx.fillText(ref.toFixed(2),8,yy+4);});
+  ctx.strokeStyle="#D1D5DB"; ctx.beginPath(); ctx.moveTo(pad.l,axisY); ctx.lineTo(w-pad.r,axisY); ctx.stroke();
+  var startDate=startText?new Date(startText):null, endDate=endText?new Date(endText):null;
+  var validTime=startDate&&endDate&&!Number.isNaN(startDate.getTime())&&!Number.isNaN(endDate.getTime())&&endDate>startDate;
+  var spanMs=validTime?endDate.getTime()-startDate.getTime():0;
+  var tickCount=Math.min(6, Math.max(2, values.length));
+  ctx.fillStyle="#6B7280"; ctx.font="11px sans-serif"; ctx.textAlign="center"; ctx.textBaseline="top";
+  for(var ti=0; ti<tickCount; ti++){
+    var ratio=tickCount===1?0:ti/(tickCount-1);
+    var xx=pad.l+ratio*(w-pad.l-pad.r);
+    ctx.strokeStyle="#EEF2F7"; ctx.beginPath(); ctx.moveTo(xx,pad.t); ctx.lineTo(xx,axisY); ctx.stroke();
+    ctx.strokeStyle="#9CA3AF"; ctx.beginPath(); ctx.moveTo(xx,axisY); ctx.lineTo(xx,axisY+5); ctx.stroke();
+    var label=validTime?formatCurveTick(new Date(startDate.getTime()+spanMs*ratio),spanMs,String(Math.round(ratio*(values.length-1))+1)):String(Math.round(ratio*(values.length-1))+1);
+    ctx.fillText(label,xx,axisY+8);
+  }
+  ctx.textAlign="left"; ctx.textBaseline="alphabetic";
+  ctx.strokeStyle="#1A73E8"; ctx.lineWidth=2.5; ctx.beginPath();
+  values.forEach(function(v,i){i===0?ctx.moveTo(x(i),y(v)):ctx.lineTo(x(i),y(v));}); ctx.stroke();
+  ctx.fillStyle="#374151"; ctx.font="12px sans-serif"; ctx.fillText("压力曲线 kPa",pad.l,14);
+}
+
+function curveThresholds(result) {
+  var perf = (result && result.performance) || {};
+  var params = perf.params || {};
+  var set = Number(params.set_pressure_kpa || 0);
+  var ac = Number(params.ac_limit_kpa || 0);
+  var sg = Number(params.sg_limit_kpa || 0);
+  if (!ac && set && params.ac_percent !== undefined) ac = Math.abs(set) * Number(params.ac_percent || 0) / 100;
+  if (!sg && set && params.sg_percent !== undefined) sg = Math.abs(set) * Number(params.sg_percent || 0) / 100;
+  return {set:set||null, ac:ac||null, sg:sg||null, acHigh:set&&ac?set+ac:null, acLow:set&&ac?set-ac:null, sgHigh:set&&sg?set+sg:null};
+}
+
+function pointState(v, th) {
+  if (th.sgHigh !== null && v > th.sgHigh) return "sg-high";
+  if (th.acHigh !== null && v > th.acHigh) return "ac-high";
+  if (th.acLow !== null && v < th.acLow) return "ac-low";
+  return "";
+}
+
+function locateCurveSegments(values, th) {
+  var segments = [], current = null, counts = {"sg-high":0,"ac-high":0,"ac-low":0};
+  values.forEach(function(v, i) {
+    var state = pointState(Number(v), th);
+    if (state) counts[state] = (counts[state] || 0) + 1;
+    if (state && current && current.state === state) {
+      current.end = i;
+      current.max = Math.max(current.max, Number(v));
+      current.min = Math.min(current.min, Number(v));
+    } else {
+      if (current) segments.push(current);
+      current = state ? {state: state, start: i, end: i, max: Number(v), min: Number(v)} : null;
+    }
+  });
+  if (current) segments.push(current);
+  return {segments: segments, counts: counts};
+}
+
+function performanceItem(result, code) {
+  var items = (((result || {}).performance || {}).items) || [];
+  return items.find(function(item){ return item.code === code; }) || {};
+}
+
+function evidenceValue(item, name) {
+  var metrics = (item && item.evidence_metrics) || [];
+  var hit = metrics.find(function(metric){ return metric.name === name; });
+  var value = hit ? Number(hit.value) : NaN;
+  return Number.isFinite(value) ? value : null;
+}
+
+function significantSegments(segments, limit) {
+  return (segments || []).filter(function(seg) {
+    return seg.state === "sg-high" || (seg.end - seg.start + 1) >= 2;
+  }).sort(function(a, b) {
+    var scoreA = (a.end - a.start + 1) + (a.state === "sg-high" ? 1000 : 0);
+    var scoreB = (b.end - b.start + 1) + (b.state === "sg-high" ? 1000 : 0);
+    return scoreB - scoreA;
+  }).slice(0, limit || 32).sort(function(a, b) { return a.start - b.start; });
+}
+
+function segmentKindText(state) {
+  if (state === "sg-high") return "超SG";
+  if (state === "ac-high") return "超AC上限";
+  if (state === "ac-low") return "低于AC下限";
+  return "异常";
+}
+
+function segmentBadgeClass(state) {
+  return state === "sg-high" ? "danger" : "warn";
+}
+
+function segmentTimeText(seg, total, startText, endText) {
+  var startDate = startText ? new Date(startText) : null;
+  var endDate = endText ? new Date(endText) : null;
+  var validTime = startDate && endDate && !Number.isNaN(startDate.getTime()) && !Number.isNaN(endDate.getTime()) && endDate > startDate && total > 1;
+  if (!validTime) return "点位 " + (seg.start + 1) + " - " + (seg.end + 1);
+  var span = endDate.getTime() - startDate.getTime();
+  var d1 = new Date(startDate.getTime() + span * seg.start / Math.max(1, total - 1));
+  var d2 = new Date(startDate.getTime() + span * seg.end / Math.max(1, total - 1));
+  return formatCurveTick(d1, span, "") + " - " + formatCurveTick(d2, span, "");
+}
+
+function buildDisplaySegments(result) {
+  var values = ((result || {}).curve || []).map(Number).filter(function(v) { return Number.isFinite(v); });
+  if (!values.length) return [];
+  var summary = locateCurveSegments(values, curveThresholds(result || {}));
+  return significantSegments(summary.segments, 24).map(function(seg, idx) {
+    return Object.assign({}, seg, {
+      id: "seg-" + idx + "-" + seg.start + "-" + seg.end,
+      order: idx + 1,
+      total: values.length,
+      timeText: segmentTimeText(seg, values.length, (result.features || {}).start, (result.features || {}).end),
+      typeText: segmentKindText(seg.state),
+      length: seg.end - seg.start + 1
+    });
+  });
+}
+
+function renderSegmentLocator(result) {
+  var list = $("segmentList");
+  var count = $("segmentCount");
+  if (!list || !count) return;
+  var segments = buildDisplaySegments(result || {});
+  count.textContent = segments.length + " 段";
+  if (!segments.length) {
+    list.innerHTML = '<div class="segment-empty">当前压力曲线未识别到可定位的超限片段。</div>';
+    return;
+  }
+  list.innerHTML = segments.map(function(seg) {
+    return '<button class="segment-item" type="button" data-seg-id="' + esc(seg.id) + '" data-start="' + esc(seg.start) + '" data-end="' + esc(seg.end) + '" data-state="' + esc(seg.state) + '">' +
+      '<div class="segment-top"><span class="segment-name">' + esc(seg.order) + '. ' + esc(seg.typeText) + '</span><span class="segment-badge ' + segmentBadgeClass(seg.state) + '">' + esc(seg.length) + '点</span></div>' +
+      '<div class="segment-time">' + esc(seg.timeText) + ' · ' + fmt(seg.min, 3) + ' - ' + fmt(seg.max, 3) + ' kPa</div>' +
+    '</button>';
+  }).join("");
+  list.querySelectorAll(".segment-item").forEach(function(btn) {
+    btn.addEventListener("click", function() {
+      locateSegmentOnCurve({
+        id: btn.dataset.segId,
+        start: Number(btn.dataset.start),
+        end: Number(btn.dataset.end),
+        state: btn.dataset.state,
+        total: ((lastResult || {}).curve || []).length
+      });
+    });
+  });
+}
+
+function locateSegmentOnCurve(seg) {
+  if (!lastResult || !seg) return;
+  selectedCurveSegment = seg;
+  switchDetailView("core");
+  document.querySelectorAll(".segment-item").forEach(function(item) {
+    item.classList.toggle("active", item.dataset.segId === seg.id);
+  });
+  requestAnimationFrame(function() {
+    var scroller = document.querySelector(".curve-scroll");
+    var canvas = $("curveCanvas");
+    if (!scroller || !canvas) return;
+    var total = Math.max(1, Number(seg.total || (lastResult.curve || []).length) - 1);
+    var mid = (Number(seg.start) + Number(seg.end)) / 2 / total;
+    var target = Math.max(0, mid * canvas.clientWidth - scroller.clientWidth / 2);
+    scroller.scrollTo({left: target, behavior: "smooth"});
+    var f = lastResult.features || {};
+    drawCurve(canvas, lastResult.curve || [], f.start, f.end, lastResult);
+  });
+}
+
+function curveExtremeMarkers(values, result) {
+  var p01 = performanceItem(result || lastResult || {}, "P01");
+  var markerData = p01.curve_markers || {};
+  var sourceCount = Number(markerData.source_count || markerData.total_count || 0);
+  function normalize(points, label, color) {
+    return (points || []).map(function(point) {
+      var rawIdx = Number(point.index);
+      var idx = Number.NaN;
+      if (Number.isFinite(rawIdx) && sourceCount > 1) {
+        idx = rawIdx * (values.length - 1) / (sourceCount - 1);
+      }
+      if (!Number.isFinite(idx)) idx = Number(point.curve_index);
+      if (!Number.isFinite(idx)) idx = rawIdx;
+      idx = Math.max(0, Math.min(values.length - 1, Math.round(idx)));
+      var rawValue = Number(point.value);
+      return {idx: idx, value: values[idx], rawValue: rawValue, label: label, color: color};
+    });
+  }
+  return {
+    pmaxMean: Number(markerData.pmax_mean),
+    pminMean: Number(markerData.pmin_mean),
+    pmaxPoints: normalize(markerData.pmax_points, "Pmax样本", "#F59E0B"),
+    pminPoints: normalize(markerData.pmin_points, "Pmin样本", "#0EA5E9")
+  };
+}
+
+function renderCurveLegend(summary, th, lowFlow, result) {
+  var box = $("curveLegend");
+  if (!box) return;
+  var segCount = summary ? summary.segments.length : 0;
+  var sg = summary ? (summary.counts["sg-high"] || 0) : 0;
+  var ac = summary ? ((summary.counts["ac-high"] || 0) + (summary.counts["ac-low"] || 0)) : 0;
+  var lowFlowCount = lowFlow && lowFlow.display_windows ? lowFlow.display_windows.length : 0;
+  var p01 = performanceItem(result || lastResult || {}, "P01");
+  var p02 = performanceItem(result || lastResult || {}, "P02");
+  var markerData = p01.curve_markers || {};
+  var pmaxCount = (markerData.pmax_points || []).length;
+  var pminCount = (markerData.pmin_points || []).length;
+  var hasExtremeMarkers = !!(p01.curve_markers && (
+    pmaxCount ||
+    pminCount ||
+    Number.isFinite(Number(p01.curve_markers.pmax_mean)) ||
+    Number.isFinite(Number(p01.curve_markers.pmin_mean))
+  ));
+  box.innerHTML = [
+    '<span class="curve-chip" style="--chip-color:#2563eb">压力</span>',
+    th.set !== null ? '<span class="curve-chip" style="--chip-color:#16a34a">设定 '+fmt(th.set,2)+'KPa</span>' : "",
+    p01.value !== undefined ? '<span class="curve-chip warn" style="--chip-color:#f59e0b">实际AC '+fmt(p01.value,2)+'%</span>' : "",
+    hasExtremeMarkers ? '<span class="curve-chip warn" style="--chip-color:#f59e0b">Pmax样本 '+pmaxCount+' / Pmin样本 '+pminCount+'</span>' : (p01.value !== undefined ? '<span class="curve-chip warn" style="--chip-color:#f59e0b">重新诊断显示Pmax/Pmin</span>' : ""),
+    p02.value !== undefined ? '<span class="curve-chip danger" style="--chip-color:#ef4444">实际SG '+fmt(p02.value,2)+'%</span>' : "",
+    th.ac !== null ? '<span class="curve-chip warn" style="--chip-color:#f59e0b">AC限值 ±'+fmt(th.ac,3)+'KPa</span>' : "",
+    th.sg !== null ? '<span class="curve-chip danger" style="--chip-color:#ef4444">SG上限 +'+fmt(th.sg,3)+'KPa</span>' : "",
+    lowFlowCount ? '<span class="curve-chip" style="--chip-color:#8b5cf6">低流量窗口 '+lowFlowCount+' 个</span>' : "",
+    lowFlow && Number.isFinite(Number(lowFlow.lockup_projection)) ? '<span class="curve-chip" style="--chip-color:#7c3aed">锁闭投影 '+fmt(lowFlow.lockup_projection,3)+'KPa</span>' : "",
+    '<span class="curve-chip '+(segCount?'danger':'')+'" style="--chip-color:'+(segCount?'#ef4444':'#94a3b8')+'">超限片段 '+segCount+' 段</span>',
+    sg ? '<span class="curve-chip danger" style="--chip-color:#dc2626">超SG '+sg+' 点</span>' : "",
+    ac ? '<span class="curve-chip warn" style="--chip-color:#f59e0b">超AC '+ac+' 点</span>' : ""
+  ].filter(Boolean).join("");
+}
+
+function drawDashedLine(ctx, x1, y1, x2, y2, color, label, labelX) {
+  ctx.save();
+  ctx.strokeStyle=color; ctx.lineWidth=1.2; ctx.setLineDash([6,5]);
+  ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+  ctx.setLineDash([]); ctx.fillStyle=color; ctx.font="11px sans-serif"; ctx.textAlign="left"; ctx.textBaseline="middle";
+  if (label) ctx.fillText(label,labelX,y1);
+  ctx.restore();
+}
+
+function drawCurve(canvas, values, startText, endText, result) {
+  if (!canvas||!values||!values.length) return;
+  values = values.map(Number).filter(function(v){ return Number.isFinite(v); });
+  if (!values.length) return;
+  var th = curveThresholds(result || lastResult || {});
+  var lowFlow = (((result || lastResult || {}).performance || {}).low_flow_analysis) || {};
+  var summary = locateCurveSegments(values, th);
+  renderCurveLegend(summary, th, lowFlow, result || lastResult || {});
+  var dpr=window.devicePixelRatio||1, rect=canvas.getBoundingClientRect();
+  canvas.width=Math.max(1,Math.floor(rect.width*dpr)); canvas.height=Math.max(1,Math.floor(rect.height*dpr));
+  var ctx=canvas.getContext("2d"); ctx.scale(dpr,dpr);
+  var w=rect.width, h=rect.height; ctx.clearRect(0,0,w,h);
+  var candidates=values.slice();
+  [th.set, th.acHigh, th.acLow, th.sgHigh, Number(lowFlow.lockup_pressure), Number(lowFlow.lockup_projection), 2.0, 2.75, 3.0].forEach(function(v){ if(v!==null&&Number.isFinite(v)) candidates.push(v); });
+  var extremes = curveExtremeMarkers(values, result || lastResult || {});
+  [extremes.pmaxMean, extremes.pminMean].forEach(function(v){ if(Number.isFinite(v)) candidates.push(v); });
+  var min=Math.min.apply(null,candidates), max=Math.max.apply(null,candidates), range=Math.max(.5,max-min), margin=range*.12;
+  min=Math.max(0,min-margin); max=max+margin;
+  var pad={l:52,r:96,t:22,b:54}, plotW=w-pad.l-pad.r, plotH=h-pad.t-pad.b;
+  var x=function(i){return pad.l+i*plotW/Math.max(1,values.length-1);};
+  var y=function(v){return pad.t+(max-v)*plotH/Math.max(.001,max-min);};
+  var axisY=h-pad.b;
+  ctx.fillStyle="#fff"; ctx.fillRect(0,0,w,h);
+  ctx.strokeStyle="#E7ECF3"; ctx.lineWidth=1;
+  var gridSeed=[min,min+(max-min)*.25,min+(max-min)*.5,min+(max-min)*.75,max,th.set,th.acHigh,th.acLow,th.sgHigh];
+  var gridVals=[];
+  gridSeed.forEach(function(v){if(v===null||!Number.isFinite(v)||v<min||v>max)return;if(!gridVals.some(function(x){return Math.abs(x-v)<0.015;}))gridVals.push(v);});
+  gridVals.sort(function(a,b){return a-b;});
+  gridVals.forEach(function(ref){var yy=y(ref);ctx.beginPath();ctx.moveTo(pad.l,yy);ctx.lineTo(w-pad.r,yy);ctx.stroke();ctx.fillStyle="#64748B";ctx.font="11px sans-serif";ctx.textAlign="right";ctx.textBaseline="middle";ctx.fillText(ref.toFixed(2),pad.l-10,yy);});
+  var startDate=startText?new Date(startText):null, endDate=endText?new Date(endText):null;
+  var validTime=startDate&&endDate&&!Number.isNaN(startDate.getTime())&&!Number.isNaN(endDate.getTime())&&endDate>startDate;
+  var spanMs=validTime?endDate.getTime()-startDate.getTime():0, tickCount=Math.min(7, Math.max(2, Math.floor(w/220)));
+  var xTime=function(text){
+    if(!validTime || !text) return null;
+    var d=new Date(text);
+    if(Number.isNaN(d.getTime())) return null;
+    return pad.l + Math.max(0, Math.min(1, (d.getTime()-startDate.getTime())/spanMs)) * plotW;
+  };
+  ctx.fillStyle="#64748B"; ctx.font="11px sans-serif"; ctx.textAlign="center"; ctx.textBaseline="top";
+  for(var ti=0; ti<tickCount; ti++){
+    var ratio=tickCount===1?0:ti/(tickCount-1), xx=pad.l+ratio*plotW;
+    ctx.strokeStyle="#EEF2F7"; ctx.beginPath(); ctx.moveTo(xx,pad.t); ctx.lineTo(xx,axisY); ctx.stroke();
+    ctx.strokeStyle="#CBD5E1"; ctx.beginPath(); ctx.moveTo(xx,axisY); ctx.lineTo(xx,axisY+5); ctx.stroke();
+    var label=validTime?formatCurveTick(new Date(startDate.getTime()+spanMs*ratio),spanMs,String(Math.round(ratio*(values.length-1))+1)):String(Math.round(ratio*(values.length-1))+1);
+    ctx.fillText(label,xx,axisY+9);
+  }
+  ctx.strokeStyle="#CBD5E1"; ctx.beginPath(); ctx.moveTo(pad.l,axisY); ctx.lineTo(w-pad.r,axisY); ctx.stroke();
+  if (th.acHigh !== null && th.acLow !== null && th.acHigh >= min && th.acLow <= max) {
+    var bandTop = y(Math.min(max, th.acHigh));
+    var bandBottom = y(Math.max(min, th.acLow));
+    ctx.fillStyle = "rgba(245,158,11,.045)";
+    ctx.fillRect(pad.l, bandTop, plotW, Math.max(1, bandBottom - bandTop));
+  }
+  (lowFlow.display_windows || []).slice(0, 5).forEach(function(win){
+    var x1=xTime(win.start), x2=xTime(win.end);
+    if(x1===null||x2===null)return;
+    if(x2<x1){var tmp=x1;x1=x2;x2=tmp;}
+    ctx.fillStyle="rgba(124,58,237,.055)";
+    ctx.fillRect(x1,pad.t,Math.max(4,x2-x1),plotH);
+    ctx.strokeStyle="rgba(124,58,237,.18)";
+    ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(x1,pad.t); ctx.lineTo(x1,axisY); ctx.stroke();
+  });
+  if (th.set !== null && th.set >= min && th.set <= max) drawDashedLine(ctx,pad.l,y(th.set),w-pad.r,y(th.set),"#16A34A","设定 "+fmt(th.set,2),w-pad.r+8);
+  if (th.acHigh !== null && th.acHigh >= min && th.acHigh <= max) drawDashedLine(ctx,pad.l,y(th.acHigh),w-pad.r,y(th.acHigh),"#F59E0B","AC上限 "+fmt(th.acHigh,2),w-pad.r+8);
+  if (th.acLow !== null && th.acLow >= min && th.acLow <= max) drawDashedLine(ctx,pad.l,y(th.acLow),w-pad.r,y(th.acLow),"#F59E0B","AC下限 "+fmt(th.acLow,2),w-pad.r+8);
+  if (th.sgHigh !== null && th.sgHigh >= min && th.sgHigh <= max) drawDashedLine(ctx,pad.l,y(th.sgHigh),w-pad.r,y(th.sgHigh),"#EF4444","SG上限 "+fmt(th.sgHigh,2),w-pad.r+8);
+  if (Number.isFinite(Number(lowFlow.lockup_projection)) && Number(lowFlow.lockup_projection) >= min && Number(lowFlow.lockup_projection) <= max) drawDashedLine(ctx,pad.l,y(Number(lowFlow.lockup_projection)),w-pad.r,y(Number(lowFlow.lockup_projection)),"#7C3AED","锁闭投影 "+fmt(lowFlow.lockup_projection,2),w-pad.r+8);
+  if (Number.isFinite(extremes.pmaxMean) && extremes.pmaxMean >= min && extremes.pmaxMean <= max) drawDashedLine(ctx,pad.l,y(extremes.pmaxMean),w-pad.r,y(extremes.pmaxMean),"#D97706","",w-pad.r+8);
+  if (Number.isFinite(extremes.pminMean) && extremes.pminMean >= min && extremes.pminMean <= max) drawDashedLine(ctx,pad.l,y(extremes.pminMean),w-pad.r,y(extremes.pminMean),"#0284C7","",w-pad.r+8);
+  significantSegments(summary.segments, 32).forEach(function(seg){var x1=x(seg.start),x2=x(seg.end);if(x2===x1)x2=x1+Math.max(4,plotW/Math.max(values.length,1));ctx.fillStyle=seg.state==="sg-high"?"rgba(239,68,68,.10)":"rgba(245,158,11,.055)";ctx.fillRect(x1,pad.t,Math.max(3,x2-x1),plotH);});
+  if (selectedCurveSegment && Number.isFinite(Number(selectedCurveSegment.start)) && Number.isFinite(Number(selectedCurveSegment.end))) {
+    var sx1 = x(Math.max(0, Math.min(values.length - 1, Number(selectedCurveSegment.start))));
+    var sx2 = x(Math.max(0, Math.min(values.length - 1, Number(selectedCurveSegment.end))));
+    if (sx2 < sx1) { var stmp = sx1; sx1 = sx2; sx2 = stmp; }
+    if (sx2 === sx1) sx2 = sx1 + Math.max(8, plotW / Math.max(values.length, 1));
+    ctx.save();
+    ctx.fillStyle = selectedCurveSegment.state === "sg-high" ? "rgba(239,68,68,.20)" : "rgba(245,158,11,.18)";
+    ctx.strokeStyle = selectedCurveSegment.state === "sg-high" ? "#DC2626" : "#D97706";
+    ctx.lineWidth = 2;
+    ctx.setLineDash([5, 4]);
+    ctx.fillRect(sx1, pad.t, Math.max(8, sx2 - sx1), plotH);
+    ctx.strokeRect(sx1, pad.t + 1, Math.max(8, sx2 - sx1), plotH - 2);
+    ctx.setLineDash([]);
+    ctx.restore();
+  }
+  ctx.strokeStyle="#2563EB"; ctx.lineWidth=2.5; ctx.lineJoin="round"; ctx.lineCap="round"; ctx.beginPath();
+  values.forEach(function(v,i){i===0?ctx.moveTo(x(i),y(v)):ctx.lineTo(x(i),y(v));}); ctx.stroke();
+  if (!extremes.pmaxPoints.length && !extremes.pminPoints.length && performanceItem(result || lastResult || {}, "P01").value !== undefined) {
+    ctx.fillStyle="#92400E"; ctx.font="12px sans-serif"; ctx.textAlign="left"; ctx.textBaseline="top";
+    ctx.fillText("当前结果缺少Pmax/Pmin采样点，请重新诊断生成新版曲线。", pad.l, pad.t + 8);
+  }
+  ctx.save();
+  ctx.shadowColor="rgba(15,23,42,.22)";
+  ctx.shadowBlur=4;
+  extremes.pmaxPoints.concat(extremes.pminPoints).forEach(function(marker){
+    var xx=x(marker.idx), yy=y(marker.value);
+    ctx.beginPath(); ctx.fillStyle=marker.color; ctx.arc(xx,yy,5,0,Math.PI*2); ctx.fill(); ctx.lineWidth=1.8; ctx.strokeStyle="#fff"; ctx.stroke();
+  });
+  ctx.restore();
+}
+
+function switchDetailView(name) {
+  document.querySelectorAll("#sectionTabs .section-tab").forEach(function(btn) {
+    btn.classList.toggle("active", btn.dataset.view === name);
+  });
+  document.querySelectorAll("#mainCard .view").forEach(function(view) {
+    view.classList.toggle("active", view.id === "view-" + name);
+  });
+  if (name === "core" && lastResult) {
+    var f = lastResult.features || {};
+    requestAnimationFrame(function(){ drawCurve($("curveCanvas"), lastResult.curve || [], f.start, f.end, lastResult); });
+  }
+}
+
+function currentHtmlReports() {
+  return batchResults.map(function(r, idx) {
+    if (!r || r.error) return null;
+    var links = r.report_links || {};
+    var path = links.overview_html || links.html || "";
+    if (!path) return null;
+    return {
+      name: r.source_filename || (r.features && r.features.station) || ("diagnosis_" + (idx + 1)),
+      path: path
+    };
+  }).filter(Boolean);
+}
+
+async function downloadBatchHtmlReports() {
+  var reports = currentHtmlReports();
+  if (!reports.length) { setStatus("暂无可下载的HTML报告", true); return; }
+
+  /* 桌面版：使用原生保存对话框 */
+  if (window.pywebview && window.pywebview.api && window.pywebview.api.save_reports_zip) {
+    setStatus("正在打包HTML报告…", true);
+    try {
+      var result = await window.pywebview.api.save_reports_zip(JSON.stringify(reports));
+      if (result && result.ok) {
+        setStatus("已保存到: " + result.path, true);
+      } else {
+        setStatus("保存失败: " + ((result && result.error) || "未知错误"), true);
+      }
+    } catch (err) {
+      setStatus("保存失败: " + (err.message || err), true);
+    }
+    return;
+  }
+
+  /* 浏览器版：blob 下载 */
+  setStatus("正在打包HTML报告…", true);
+  try {
+    var res = await fetch("/api/reports_zip", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({reports: reports})
+    });
+    if (!res.ok) throw new Error(await res.text() || res.statusText);
+    var blob = await res.blob();
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url;
+    a.download = "本次诊断HTML报告.zip";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    setStatus("HTML报告压缩包已生成", true);
+  } catch (err) {
+    setStatus("批量下载失败：" + err.message, true);
+  }
+}
+
+function aiRequestPayload(data) {
+  if (!data) return {};
+  return {
+    source_filename: data.source_filename,
+    features: data.features || {},
+    health: data.health || {},
+    performance: data.performance || {},
+    findings: data.findings || [],
+    ai: data.ai || {},
+    input_profile: data.input_profile || {}
+  };
+}
+
+function cleanAiLine(text) {
+  return String(text || "")
+    .replace(/\*\*/g, "")
+    .replace(/^#+\s*/g, "")
+    .replace(/^\s*[-*]\s*/g, "")
+    .replace(/^\s*\d+[\.、]\s*/g, "")
+    .trim();
+}
+
+function formatAiContent(content) {
+  var text = String(content || "").replace(/\r/g, "\n");
+  text = text.replace(/\*\*/g, "");
+  var parsed = text
+    .split(/\n+|(?=结论[:：])|(?=重点\d*[:：])|(?=建议[:：])|(?=复核[:：])/)
+    .map(cleanAiLine)
+    .filter(Boolean);
+  var wanted = [];
+  ["结论", "建议"].forEach(function(key) {
+    var hit = parsed.find(function(line) { return line.indexOf(key + "：") === 0 || line.indexOf(key + ":") === 0; });
+    if (hit) wanted.push(hit);
+  });
+  var parts = wanted.length ? wanted : parsed.slice(0, 2);
+  if (!parts.length) return '<div class="ai-summary-list"><div class="ai-point"><strong>提示</strong><span>未生成有效分析内容。</span></div></div>';
+  return '<div class="ai-summary-list">' + parts.map(function(line) {
+    var label = "重点";
+    var body = line;
+    var cls = "";
+    var m = line.match(/^(结论|重点\d*|建议|复核)[:：]\s*(.*)$/);
+    if (m) {
+      label = m[1];
+      body = m[2] || "";
+    }
+    if (label === "结论") cls = " conclusion";
+    if (label === "建议" || label === "复核") cls = " action";
+    return '<div class="ai-point'+cls+'"><strong>'+esc(label)+'</strong><span>'+esc(body || line)+'</span></div>';
+  }).join("") + '</div>';
+}
+
+async function generateAiAnalysis() {
+  if (!lastResult) {
+    setStatus("请先完成一次诊断", true);
+    return;
+  }
+  var btn = $("aiAnalysisBtn");
+  var out = $("aiOutput");
+  var meta = $("aiMeta");
+  if (btn) btn.disabled = true;
+  if (out) {
+    out.classList.add("loading");
+    out.textContent = "正在生成分析意见...";
+  }
+  if (meta) meta.textContent = "正在调用分析服务";
+  try {
+    var res = await fetch("/api/llm_analysis", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({result: aiRequestPayload(lastResult)})
+    });
+    var data = await res.json();
+    if (!res.ok || data.error) throw new Error(data.error || res.statusText);
+    if (out) {
+      out.classList.remove("loading");
+      out.innerHTML = formatAiContent(data.content || "");
+    }
+    if (meta) {
+      var source = data.provider === "deepseek" ? ("DeepSeek · " + (data.model || "")) : "本地模板";
+      meta.textContent = source + "，仅用于解释说明，不参与等级判定";
+    }
+    setStatus(data.provider === "deepseek" ? "智能分析意见已生成" : "已生成本地分析意见", true);
+  } catch (err) {
+    if (out) {
+      out.classList.remove("loading");
+      out.textContent = "生成失败：" + (err.message || err);
+    }
+    if (meta) meta.textContent = "分析服务不可用";
+    setStatus("智能分析生成失败：" + (err.message || err), true);
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
+function renderResult(data) {
+  if(data.error){setStatus("诊断失败："+data.error,true);return;}
+  selectedCurveSegment = null;
+  lastResult=data; var f=data.features||{}, h=data.health||{}, p=data.performance||{}, items=p.items||[];
+  var ai=data.ai||{}, iso=ai.isolation_forest||{}, knn=ai.knn||{}, ev=h.evidence||{}, findings=data.findings||[], links=data.report_links||{}, profile=data.input_profile||{};
+
+  $("emptyState").style.display="none"; $("detailRow").style.display="grid"; $("kpiRow").style.display="grid";
+  if ($("aiPanel")) $("aiPanel").style.display = "block";
+  if ($("aiOutput")) { $("aiOutput").classList.remove("loading"); $("aiOutput").textContent = "点击“生成分析意见”，系统会基于当前诊断结果生成正式说明。"; }
+  if ($("aiMeta")) $("aiMeta").textContent = "基于当前诊断结果生成，不参与等级判定";
+  if ($("aiAnalysisBtn")) { $("aiAnalysisBtn").disabled = false; $("aiAnalysisBtn").onclick = generateAiAnalysis; }
+  $("pageMeta").textContent = (data.source_filename||f.station||"")+" · "+(f.start||"")+" – "+(f.end||"")+" · "+(f.count||"")+" 样本";
+
+  var hLevel=h.level||0;
+  $("healthBadge").className="health-badge "+healthBadgeClass(hLevel);
+  $("healthBadge").innerHTML='<span class="dot"></span>'+esc(h.label||"—");
+  $("riskScore").textContent=fmt(h.risk_score,2)||"—"; $("healthSub").textContent=hLevel?"综合风险分 · 等级 "+hLevel+"/5":"等待诊断数据";
+
+  var p01=items.find(function(i){return i.code==="P01";})||{};
+  var p02=items.find(function(i){return i.code==="P02";})||{};
+  var p03=items.find(function(i){return i.code==="P03";})||{};
+  $("p01Val").textContent=p01.value!==undefined?(p01.unit==="%"?fmt(p01.value,2)+"%":fmt(p01.value,2)):"—";
+  $("p01Badge").textContent=p01.label||"—"; $("p01Badge").className="kpi-badge "+levelBadgeClass(p01.level);
+  $("p02Val").textContent=p02.value!==undefined?(p02.unit==="%"?fmt(p02.value,2)+"%":fmt((p02.ratio||0)*100,1)+"%"):"—";
+  $("p02Badge").textContent=p02.label||"—"; $("p02Badge").className="kpi-badge "+levelBadgeClass(p02.level);
+  $("p03Val").textContent=p03.value!==undefined?(p03.unit==="%"?fmt(p03.value,1)+"%":fmt(p03.value,2)):"—";
+  $("p03Badge").textContent=p03.label||"—"; $("p03Badge").className="kpi-badge "+levelBadgeClass(p03.level);
+  $("p03Sub").textContent=p03.unit==="%"?"密封爬升指数，非实测泄漏量":"实测/导入泄漏量";
+
+  $("cardTitle").textContent="核心性能指标详情"; $("cardMeta").textContent="站点: "+esc(f.station||"—")+" · "+esc(f.start||"—");
+  $("metricGrid").innerHTML=items.map(function(i, idx){return metricCard(i, idx);}).join("");
+
+  $("auxMean").textContent=fmt(f.mean,2); $("auxStd").textContent=fmt(f.std,3);
+  $("auxCv").textContent=f.mean?fmt((f.std||0)/f.mean*100,1)+"%":"—"; $("auxCount").textContent=f.count?f.count.toLocaleString():"—";
+  switchDetailView("core");
+  requestAnimationFrame(function(){ drawCurve($("curveCanvas"), data.curve || [], f.start, f.end, data); });
+
+  var dr=(h.decision_reasons||[]).map(function(x){return"<tr><td>"+esc(x)+"</td></tr>";}).join("")||"<tr><td>暂无</td></tr>";
+  $("auxEvidence").innerHTML='<tr><th>规则等级</th><td>'+esc(ev.rule_level)+'</td><th>综合风险分</th><td>'+fmt(h.risk_score,4)+'</td></tr><tr><th>Isolation Forest</th><td>'+fmt(iso.score,4)+' / '+esc(iso.band_label||"")+(iso.percentile!==undefined?" / P"+esc(iso.percentile):"")+'</td><th>KNN</th><td>'+fmt(knn.score,4)+' / '+esc(knn.band_label||"")+(knn.percentile!==undefined?" / P"+esc(knn.percentile):"")+'</td></tr><tr><th>基线等级</th><td>'+esc(ev.baseline_level)+'</td><th>趋势等级</th><td>'+esc(ev.trend_level)+'</td></tr>';
+  $("auxDecisions").innerHTML="<tr><th>说明</th></tr>"+dr;
+
+  var br=(profile.blocks||[]).map(function(x){return"<tr><td>"+esc(x.station)+"</td><td>"+esc(x.timestamp_source)+"</td><td>"+esc(x.pressure_column)+"</td><td>"+esc(x.valid_rows)+"</td><td>"+esc(x.start)+" 至 "+esc(x.end)+"</td></tr>";}).join("")||'<tr><td colspan="5">无导入识别信息</td></tr>';
+  $("qualityTable").innerHTML='<tr><th>文件</th><td>'+esc(profile.file_name||"")+'</td><th>类型</th><td>'+esc(profile.file_type||"")+'</td></tr><tr><th>原始行/列</th><td>'+esc(profile.raw_rows||0)+'/'+esc(profile.raw_columns||0)+'</td><th>有效/无效</th><td>'+esc(profile.valid_rows||0)+'/'+esc(profile.invalid_rows||0)+'</td></tr><tr><th>站点</th><th>时间来源</th><th>压力列</th><th>有效样本</th><th>时间范围</th></tr>'+br;
+
+  var codes=["R01","R02","R03","R04","R05","R06","R07","R08"], rm={"R01":{name:"稳压超限",desc:"出口压力超出设定压力±AC允差范围"},"R02":{name:"关闭压力高",desc:"关闭压力字段或低流量锁闭投影超过SG上限"},"R03":{name:"阀座泄漏",desc:"泄漏量超限或密封爬升指数异常"},"R04":{name:"喘振波动",desc:"压力波动幅值与频率异常"},"R05":{name:"趋势漂移",desc:"长期压力趋势偏离正常范围"},"R06":{name:"夜间异常",desc:"夜间低压时段压力偏高"},"R07":{name:"波动率异常",desc:"压力波动率超出正常范围"},"R08":{name:"静压漂移",desc:"非流动期静压持续漂移"}};
+  var trig=findings.length;
+  $("rpCount").textContent=trig+" 条触发"; $("rpCount").className="rp-count "+(trig===0?"clear":trig<=2?"alert":"danger");
+  var maxSeverity=findings.reduce(function(m,x){return Math.max(m, Number(x.severity||0));},0);
+  var hitMap={}; findings.forEach(function(x){hitMap[x.code]=x;});
+  var ordered=codes.slice().sort(function(a,b){return (hitMap[b]?1:0)-(hitMap[a]?1:0);});
+  var cards=ordered.map(function(code){
+    var r=rm[code]||{name:code,desc:""}, hit=hitMap[code], pass=!hit;
+    return '<div class="rule-item '+(pass?'ok':'hit')+'">' +
+      '<div class="rule-code"><span><code>'+esc(code)+'</code> '+esc(r.name)+'</span>'+(hit?'<span class="rule-severity">'+esc(hit.severity)+'级</span>':'')+'</div>' +
+      '<div class="rule-desc">'+esc(hit?hit.evidence:r.desc)+'</div>' +
+      '<div class="rule-status '+(pass?'pass':'fail')+'"><span class="dot"></span>'+(pass?'正常':esc(hit.maintenance||'建议维护'))+'</div>' +
+    '</div>';
+  }).join("");
+  $("ruleItems").innerHTML =
+    '<div class="rule-summary-grid">' +
+      '<div class="rule-summary-card"><strong>'+trig+'</strong><span>触发规则</span></div>' +
+      '<div class="rule-summary-card"><strong>'+(maxSeverity||"—")+'</strong><span>最高等级</span></div>' +
+      '<div class="rule-summary-card"><strong>'+(codes.length-trig)+'</strong><span>未触发</span></div>' +
+    '</div><div class="rule-list-collapse" id="ruleListCollapse"><div class="rule-list">'+cards+'</div></div>';
+  renderSegmentLocator(data);
+  var overviewLink = links.overview_html || links.html || "";
+  var batchReports = currentHtmlReports();
+  $("linksRow").innerHTML =
+    (overviewLink ? '<a class="link-pill" href="'+esc(overviewLink)+'" target="_blank">导出HTML报告</a>' : "") +
+    (batchReports.length ? '<button class="link-pill" id="downloadZipBtn" type="button">批量下载本次HTML报告</button>' : "");
+  var zipBtn = $("downloadZipBtn");
+  if (zipBtn) zipBtn.addEventListener("click", downloadBatchHtmlReports);
+  setStatus("诊断完成",true);
+}
+
+function renderResultSwitcher() {
+  var sw=$("resultSwitcher"); if(batchResults.length<=1){sw.style.display="none";return;} sw.style.display="flex";
+  sw.innerHTML=batchResults.map(function(r,i){var name=r.source_filename||(r.features&&r.features.station?r.features.station:"结果 "+(i+1));if(r.error)return'<button class="result-chip" data-idx="'+i+'">⚠ '+esc(name)+'</button>';var h=r.health||{};return'<button class="result-chip '+(i===activeResultIdx?"active":"")+'" data-idx="'+i+'"><span class="lvl-dot" style="background:'+healthDotColor(h.level)+'"></span>'+esc(name)+' · '+esc(h.label||"—")+'</button>';}).join("");
+  sw.querySelectorAll(".result-chip").forEach(function(btn){btn.addEventListener("click",function(){activeResultIdx=parseInt(btn.dataset.idx,10);sw.querySelectorAll(".result-chip").forEach(function(b){b.classList.remove("active");});btn.classList.add("active");renderResult(batchResults[activeResultIdx]);});});
+}
+
+async function diagnoseBatch() {
+  if(!fileQueue.length){setStatus("请先选择文件",true);return;}
+  var btn=$("diagnoseBtn"); btn.disabled=true; $("diagBtnLabel").textContent="诊断中…";
+  $("batchProgress").style.display="flex"; setStatus("正在诊断…",true);
+  batchResults=[]; activeResultIdx=0;
+  for(var i=0;i<fileQueue.length;i++){var entry=fileQueue[i], f=entry.file||entry, paramsJson=JSON.stringify(entry.params||performanceParams());$("batchProgressText").textContent="正在诊断 "+(i+1)+"/"+fileQueue.length+"："+f.name;$("batchProgressSub").textContent="剩余 "+(fileQueue.length-i-1)+" 个文件";try{var buf=await f.arrayBuffer();var res=await fetch("/api/upload",{method:"POST",headers:{"X-Filename":encodeURIComponent(f.name),"X-Performance-Params":encodeURIComponent(paramsJson)},body:buf});if(!res.ok)throw new Error(await res.text()||res.statusText);var data=await res.json();data.source_filename=f.name;batchResults.push(data);}catch(err){batchResults.push({error:err.message,source_filename:f.name});}}
+  var ok=batchResults.filter(function(r){return !r.error;}).length, err=batchResults.length-ok;
+  setStatus("诊断完成："+ok+" 个成功"+(err?" / "+err+" 个失败":""),true);
+  renderResultSwitcher(); if(batchResults.length>0)renderResult(batchResults[0]);
+  btn.disabled=false; $("diagBtnLabel").textContent="开始诊断"; $("batchProgress").style.display="none";
+}
+
+updateThresholdPreview();
+var dropzone=$("dropzone"), uploadInput=$("uploadInput");
+dropzone.addEventListener("click",function(){uploadInput.click();});
+dropzone.addEventListener("dragover",function(e){e.preventDefault();dropzone.classList.add("dragover");});
+dropzone.addEventListener("dragleave",function(){dropzone.classList.remove("dragover");});
+dropzone.addEventListener("drop",function(e){e.preventDefault();dropzone.classList.remove("dragover");addFiles(e.dataTransfer.files);});
+uploadInput.addEventListener("change",function(){addFiles(uploadInput.files);uploadInput.value="";});
+document.getElementById("sectionTabs").addEventListener("click",function(e){var t=e.target.closest(".section-tab"); if(t)switchDetailView(t.dataset.view);});
+["setPressure","acKpa","sgKpa","extremeSampleN","inletMaxFluct","seatLeakLimit","seatLeakSurrogateLimit"].forEach(function(id){$(id).addEventListener("input",updateThresholdPreview);});
+$("applyParamsAll").addEventListener("click",applyGlobalParamsToFiles);
+$("diagnoseBtn").addEventListener("click",diagnoseBatch);
+
+/* ---- 缩放控制 ---- */
+(function() {
+  var saved = localStorage.getItem("gas_zoom") || "75";
+  setZoom(parseInt(saved, 10));
+})();
+
+function setZoom(v) {
+  var pct = Math.max(60, Math.min(120, parseInt(v, 10) || 85));
+  document.body.style.zoom = pct + "%";
+  var sl = document.getElementById("zoomSlider");
+  var dp = document.getElementById("zoomPct");
+  if (sl) sl.value = pct;
+  if (dp) dp.textContent = pct + "%";
+  localStorage.setItem("gas_zoom", String(pct));
+}
+
+function adjustZoom(delta) {
+  var sl = document.getElementById("zoomSlider");
+  setZoom((sl ? parseInt(sl.value, 10) : 85) + delta);
+}
+
+/* ---- 规则触发折叠 ---- */
+var rulesOpen = false;
+function toggleRules() {
+  rulesOpen = !rulesOpen;
+  var collapse = document.getElementById("ruleListCollapse");
+  var toggle = document.getElementById("rpToggle");
+  if (collapse) collapse.classList.toggle("open", rulesOpen);
+  if (toggle) toggle.classList.toggle("open", rulesOpen);
+  if (rulesOpen) {
+    collapse.style.maxHeight = collapse.scrollHeight + "px";
+  } else {
+    collapse.style.maxHeight = "0";
+  }
+}
+</script>
+</body>
+</html>
