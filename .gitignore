@@ -8,6 +8,7 @@ venv/
 env/
 .env
 .env.*
+!.env.example
 
 deepseek_api_key.txt
 deepseek_model.txt
@@ -15,7 +16,14 @@ deepseek_model.txt
 build/
 dist/
 outputs/
+runtime_data/
 .workbuddy/
+
+# Source materials and field data are not part of the deployable repository.
+实验数据/
+调压器实验压力数据/
+*.pptx
+*.docx
 
 *.log
 *.tmp
@@ -23,3 +31,5 @@ outputs/
 
 .DS_Store
 Thumbs.db
+
+secrets/

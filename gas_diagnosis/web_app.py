@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import io
 import os
+import re
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import csv
 import json
@@ -13,7 +14,8 @@ import threading
 import time
 import urllib.error
 import urllib.request
-from urllib.parse import parse_qs, unquote, urlparse
+from urllib.parse import parse_qs, quote, unquote, urlparse
+from uuid import uuid4
 import zipfile
 
 import pandas as pd
@@ -31,20 +33,16 @@ def _curve_points_for_display(data: pd.DataFrame) -> int:
     return min(count, 6000)
 
 
-# ── 路径解析（支持 PyInstaller 打包） ──────────────────────
+# ── 路径解析（支持本地运行、容器部署与 PyInstaller 打包） ─────────
 def _resolve_paths() -> tuple[Path, Path]:
     """返回 (bundle_dir, data_dir)
     - bundle_dir: 只读资源目录（静态文件、模型等）
     - data_dir: 用户可写数据目录（上传、诊断输出等）
     """
-    if os.environ.get("GAS_IS_FROZEN") == "1":
-        bundle_dir = Path(os.environ["GAS_BUNDLE_DIR"])
-        data_dir = Path(os.environ["GAS_DATA_DIR"])
-    else:
-        root = Path(__file__).resolve().parents[1]
-        bundle_dir = root
-        data_dir = root
-    return bundle_dir, data_dir
+    root = Path(__file__).resolve().parents[1]
+    bundle_dir = Path(os.environ.get("GAS_BUNDLE_DIR", root)).expanduser()
+    data_dir = Path(os.environ.get("GAS_DATA_DIR", root)).expanduser()
+    return bundle_dir.resolve(), data_dir.resolve()
 
 
 _BUNDLE_DIR, _DATA_DIR = _resolve_paths()
@@ -57,6 +55,8 @@ UPLOAD_DIR = _DATA_DIR / "outputs" / "web_uploads"
 REPORT_DIR = _DATA_DIR / "outputs" / "web_diagnosis"
 UPLOAD_LOG = REPORT_DIR / "upload_diagnosis_log.csv"
 LOG_LOCK = threading.Lock()
+ALLOWED_UPLOAD_SUFFIXES = {".csv", ".xlsx", ".xls"}
+ALLOWED_REPORT_SUFFIXES = {".pdf", ".html", ".json", ".md"}
 
 
 def _json_default(value):
@@ -75,6 +75,22 @@ def _safe_resolve(path: str | Path) -> Path:
     if ROOT not in resolved.parents and resolved != ROOT:
         raise ValueError("path outside workspace is not allowed")
     return resolved
+
+
+def _is_within(path: Path, root: Path) -> bool:
+    resolved = path.resolve()
+    resolved_root = root.resolve()
+    return resolved == resolved_root or resolved_root in resolved.parents
+
+
+def _safe_upload_filename(name: str) -> str:
+    original = Path(str(name or "upload.csv")).name
+    suffix = Path(original).suffix.lower()
+    if suffix not in ALLOWED_UPLOAD_SUFFIXES:
+        raise ValueError("仅支持 CSV、XLSX 或 XLS 文件")
+    stem = "".join(ch if ch.isalnum() or ch in "-_" else "_" for ch in Path(original).stem)
+    stem = stem.strip("_")[:80] or "upload"
+    return f"{uuid4().hex}_{stem}{suffix}"
 
 
 def _load_baseline() -> dict:
@@ -114,17 +130,36 @@ def _report_path_from_link(value: str) -> Path:
         parsed = urlparse(value)
         value = parse_qs(parsed.query).get("path", [""])[0]
     target = _safe_resolve(unquote(value))
-    if target.suffix.lower() != ".html":
-        raise ValueError("only html reports can be packaged")
+    if target.suffix.lower() != ".pdf":
+        raise ValueError("only PDF reports can be packaged")
+    if not _is_within(target, REPORT_DIR):
+        raise ValueError("report path outside report directory is not allowed")
     if not target.exists() or not target.is_file():
         raise FileNotFoundError(f"report not found: {target}")
     return target
 
 
+def _safe_report_path(value: str) -> Path:
+    target = _safe_resolve(unquote(str(value or "")))
+    if not _is_within(target, REPORT_DIR):
+        raise ValueError("report path outside report directory is not allowed")
+    if target.suffix.lower() not in ALLOWED_REPORT_SUFFIXES:
+        raise ValueError("unsupported report type")
+    if not target.exists() or not target.is_file():
+        raise FileNotFoundError("report not found")
+    return target
+
+
+def _public_report_link(value: str | Path) -> str:
+    target = Path(value).resolve()
+    relative = target.relative_to(ROOT.resolve()).as_posix()
+    return "/file?path=" + quote(relative, safe="/")
+
+
 def _safe_zip_name(name: str, index: int) -> str:
     stem = "".join(ch if ch.isalnum() or ch in "-_" else "_" for ch in str(name or f"report_{index}"))
     stem = stem.strip("_") or f"report_{index}"
-    return f"{index:02d}_{stem[:80]}.html"
+    return f"{index:02d}_{stem[:80]}.pdf"
 
 
 def _diagnose_path(path: Path, performance_params: dict | None = None) -> dict:
@@ -133,13 +168,15 @@ def _diagnose_path(path: Path, performance_params: dict | None = None) -> dict:
     result = diagnose_frame(data, _load_baseline(), performance_params)
     result["curve"] = resample_curve(data, _curve_points_for_display(data))
     result["input_profile"] = input_profile
-    output_dir = REPORT_DIR / f"{int(time.time())}_{''.join(ch if ch.isalnum() else '_' for ch in result['features']['station'])}"
+    station = "".join(ch if ch.isalnum() else "_" for ch in result["features"]["station"])
+    output_dir = REPORT_DIR / f"{uuid4().hex}_{station[:60]}"
     outputs = write_reports(result, data, output_dir)
     result["outputs"] = outputs
-    result["source_path"] = str(path)
+    result["source_path"] = str(path.resolve().relative_to(ROOT.resolve()))
     result["report_links"] = {
-        key: "/file?path=" + value.replace("\\", "/")
+        key: _public_report_link(value)
         for key, value in outputs.items()
+        if key in {"pdf", "overview_pdf"}
     }
     return result
 
@@ -150,11 +187,9 @@ def _compact_llm_result(result: dict) -> dict:
     features = result.get("features") or {}
     health = result.get("health") or {}
     performance = result.get("performance") or {}
-    ai = result.get("ai") or {}
     profile = result.get("input_profile") or {}
 
     def compact_item(item: dict) -> dict:
-        metrics = item.get("evidence_metrics") or []
         return {
             "code": item.get("code"),
             "name": item.get("name"),
@@ -165,9 +200,7 @@ def _compact_llm_result(result: dict) -> dict:
             "ratio": item.get("ratio"),
             "reference": item.get("reference"),
             "confidence": item.get("confidence"),
-            "confirmation_status": item.get("confirmation_status"),
             "description": item.get("description"),
-            "evidence_metrics": metrics[:16],
         }
 
     return {
@@ -180,42 +213,25 @@ def _compact_llm_result(result: dict) -> dict:
             "min": features.get("min"),
             "max": features.get("max"),
             "std": features.get("std"),
-            "high_275_ratio": features.get("high_275_ratio"),
-            "high_300_ratio": features.get("high_300_ratio"),
-            "low_200_ratio": features.get("low_200_ratio"),
-            "night_max": features.get("night_max"),
-            "slope_per_day": features.get("slope_per_day"),
         },
         "health": {
             "level": health.get("level"),
             "label": health.get("label"),
             "risk_score": health.get("risk_score"),
-            "performance_score": health.get("performance_score"),
-            "auxiliary_score": health.get("auxiliary_score"),
-            "decision_reasons": health.get("decision_reasons") or [],
         },
         "performance": {
             "params": performance.get("params") or {},
             "overall": performance.get("overall") or {},
             "items": [compact_item(item) for item in performance.get("items", [])],
-            "low_flow_analysis": performance.get("low_flow_analysis") or {},
         },
         "findings": [
             {
-                "code": item.get("code"),
                 "name": item.get("name"),
                 "severity": item.get("severity"),
-                "evidence": item.get("evidence"),
                 "maintenance": item.get("maintenance"),
             }
             for item in result.get("findings", [])
         ],
-        "auxiliary_ai": {
-            "isolation_forest": ai.get("isolation_forest") or {},
-            "knn": ai.get("knn") or {},
-            "baseline_score": ai.get("baseline_score"),
-            "top_features": (ai.get("top_features") or [])[:6],
-        },
         "input_profile": {
             "file_name": profile.get("file_name") or result.get("source_filename"),
             "file_type": profile.get("file_type"),
@@ -224,6 +240,23 @@ def _compact_llm_result(result: dict) -> dict:
             "warnings": profile.get("warnings") or [],
         },
     }
+
+
+def _sanitize_llm_content(content: str) -> str:
+    """Keep user-facing analysis free of internal model and feature names."""
+    text = str(content or "")
+    replacements = (
+        (r"KNN\s*异常信号", "辅助异常信号"),
+        (r"(?<![A-Za-z0-9_])KNN(?![A-Za-z0-9_])", "辅助分析"),
+        (r"(?<![A-Za-z0-9_])wave[_\s-]*count(?![A-Za-z0-9_])", "压力波动"),
+        (r"(?<![A-Za-z0-9_])Isolation\s*Forest(?![A-Za-z0-9_])", "辅助分析"),
+        (r"(?<![A-Za-z])IF(?![A-Za-z])", "辅助分析"),
+        (r"(?<![A-Za-z0-9_])baseline[_\s-]*score(?![A-Za-z0-9_])", "历史偏离程度"),
+        (r"(?<![A-Za-z0-9_])top[_\s-]*features(?![A-Za-z0-9_])", "主要影响因素"),
+    )
+    for pattern, replacement in replacements:
+        text = re.sub(pattern, replacement, text, flags=re.IGNORECASE)
+    return re.sub(r"辅助分析(?:层)?辅助分析", "辅助分析", text).strip()
 
 
 def _local_llm_analysis(summary: dict, reason: str = "") -> dict:
@@ -255,7 +288,7 @@ def _local_llm_analysis(summary: dict, reason: str = "") -> dict:
 
 def _deepseek_analysis(summary: dict) -> dict:
     api_key = os.environ.get("DEEPSEEK_API_KEY", "").strip().lstrip("\ufeff")
-    key_file = _DATA_DIR / "deepseek_api_key.txt"
+    key_file = Path(os.environ.get("DEEPSEEK_API_KEY_FILE", _DATA_DIR / "deepseek_api_key.txt"))
     if not api_key and key_file.exists():
         api_key = key_file.read_text(encoding="utf-8-sig").strip().lstrip("\ufeff")
     if not api_key:
@@ -279,6 +312,9 @@ def _deepseek_analysis(summary: dict) -> dict:
         "固定格式只能包含两项：结论：...；建议：...。"
         "结论只写最终状态和最主要原因。建议只写下一步处置动作。"
         "不要逐项复述全部指标，不要单独强调非实测、估算、模拟等字样；除非它直接影响处置动作，最多轻描淡写一句复核即可。"
+        "不得引用算法名称、英文变量名、内部字段名或特征名。"
+        "不要出现KNN、wave_count、Isolation Forest、IF、baseline_score、top_features等词语，"
+        "只使用稳压性能、关闭压力性能、阀座密封性能、压力波动、风险等级等易懂的业务表述。"
     )
     user_prompt = (
         "请基于以下诊断JSON生成极简重点分析。只输出结论和建议两项。\n\n"
@@ -315,7 +351,7 @@ def _deepseek_analysis(summary: dict) -> dict:
                 "ok": True,
                 "provider": "deepseek",
                 "model": model,
-                "content": content,
+                "content": _sanitize_llm_content(content),
                 "usage": data.get("usage"),
             }
         except urllib.error.HTTPError as exc:
@@ -1056,7 +1092,7 @@ HTML = r"""<!doctype html>
           ${warnings}
         </div>
         <div class="links" style="margin-top:16px">
-          ${(links.overview_html || links.html) ? `<a href="${links.overview_html || links.html}" target="_blank">导出HTML报告</a>` : ""}
+          ${(links.overview_pdf || links.pdf) ? `<a href="${links.overview_pdf || links.pdf}" download>导出PDF报告</a>` : ""}
         </div>
       `;
     }
@@ -1410,15 +1446,14 @@ class Handler(BaseHTTPRequestHandler):
                 self._send_json(_summary_payload())
             elif parsed.path == "/file":
                 qs = parse_qs(parsed.query)
-                target = _safe_resolve(qs.get("path", [""])[0])
-                if not target.exists() or not target.is_file():
-                    self._send_error(404, "file not found")
-                    return
+                target = _safe_report_path(qs.get("path", [""])[0])
                 ctype = "text/plain; charset=utf-8"
                 if target.suffix.lower() == ".html":
                     ctype = "text/html; charset=utf-8"
                 elif target.suffix.lower() == ".json":
                     ctype = "application/json; charset=utf-8"
+                elif target.suffix.lower() == ".pdf":
+                    ctype = "application/pdf"
                 self._send(200, target.read_bytes(), ctype)
             else:
                 self._send_error(404, "not found")
@@ -1460,19 +1495,17 @@ class Handler(BaseHTTPRequestHandler):
                             arcname = _safe_zip_name(f"{display_name}_{index}", index)
                         used_names.add(arcname)
                         zf.write(target, arcname)
-                self._send_download(buffer.getvalue(), "application/zip", "diagnosis_html_reports.zip")
+                self._send_download(buffer.getvalue(), "application/zip", "diagnosis_pdf_reports.zip")
             elif parsed.path == "/api/upload":
                 name = unquote(self.headers.get("X-Filename", "upload.csv"))
                 raw_params = unquote(self.headers.get("X-Performance-Params", "{}"))
                 performance_params = _performance_params_from_payload(json.loads(raw_params or "{}"))
-                safe = "".join(ch if ch.isalnum() or ch in ".-_" else "_" for ch in name)
                 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
-                target = UPLOAD_DIR / f"{int(time.time())}_{safe}"
+                target = UPLOAD_DIR / _safe_upload_filename(name)
                 target.write_bytes(body)
                 result = _diagnose_path(target, performance_params)
                 _append_upload_log(name, target, result)
                 result["logged"] = True
-                result["log_path"] = str(UPLOAD_LOG)
                 self._send_json(result)
             else:
                 self._send_error(404, "not found")

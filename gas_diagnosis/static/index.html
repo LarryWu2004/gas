@@ -104,8 +104,21 @@
     .nav-link:hover { background: #dce8fc; box-shadow: 0 8px 18px rgba(26,115,232,.12); }
     .nav-link:active { transform: translateY(1px); }
 
-    .shell { display: grid; grid-template-columns: 320px minmax(0, 1fr); min-height: calc(100vh - 64px); }
-    .sidebar { background: var(--surface); border-right: 1px solid var(--line); padding: 24px; display: flex; flex-direction: column; gap: 6px; overflow-y: auto; }
+    .shell { display: grid; grid-template-columns: 320px minmax(0, 1fr); min-height: calc(100vh - 64px); align-items: stretch; }
+    .sidebar { position: relative; background: var(--surface); border-right: 1px solid var(--line); padding: 0; display: flex; flex-direction: column; min-height: 0; overflow: visible; }
+    .sidebar-scroll { flex: 0 0 auto; padding: 24px 24px 14px; }
+    .sidebar-action {
+      flex: 0 0 auto;
+      position: sticky;
+      bottom: 0;
+      padding: 12px 24px 18px;
+      border-top: 1px solid var(--line-soft);
+      background: rgba(255,255,255,.86);
+      box-shadow: 0 -12px 28px rgba(42,64,89,.08), inset 0 1px 0 rgba(255,255,255,.92);
+      -webkit-backdrop-filter: blur(20px) saturate(150%);
+      backdrop-filter: blur(20px) saturate(150%);
+      z-index: 8;
+    }
     .sb-title { font-size: 13px; font-weight: 600; color: var(--soft); text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 0; }
     .sb-section { display: flex; flex-direction: column; gap: 10px; padding-top: 14px; padding-bottom: 10px; }
     .sb-section+.sb-section { border-top: 1px solid var(--line-soft); }
@@ -149,10 +162,10 @@
     .ghost-btn:hover { background: var(--primary-light); border-color: rgba(26,115,232,.18); color: var(--primary); }
     .sb-status { font-size: 12px; color: var(--muted); padding: 4px 0; line-height: 1.5; min-height: 18px; }
 
-    .diag-btn { width: 100%; height: 48px; border-radius: var(--radius-lg); background: var(--primary); color: #fff; font-size: 15px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: auto; transition: filter .15s, transform .1s; }
+    .diag-btn { width: 100%; height: 48px; border-radius: var(--radius-lg); background: var(--primary); color: #fff; font-size: 15px; font-weight: 600; display: flex; align-items: center; justify-content: center; gap: 8px; margin: 0; transition: filter .15s, transform .1s; }
     .diag-btn:hover { filter: brightness(1.08); } .diag-btn:active { transform: scale(.98); } .diag-btn:disabled { opacity: .6; cursor: wait; filter: none; transform: none; }
 
-    .main { padding: 20px; display: flex; flex-direction: column; gap: 20px; overflow-y: auto; }
+    .main { min-width: 0; padding: 20px 20px 56px; display: flex; flex-direction: column; gap: 20px; overflow: visible; }
     .page-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
     .page-title { font-size: 22px; font-weight: 600; color: var(--ink); letter-spacing: -0.01em; }
     .page-meta { font-size: 13px; color: var(--soft); margin-top: 4px; }
@@ -193,6 +206,7 @@
     .evidence-bar.warn { background: var(--warning); } .evidence-bar.danger { background: var(--danger); } .evidence-bar.muted { background: var(--soft); }
 
     .detail-row { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 20px; }
+    .right-rail { display: grid; gap: 20px; align-self: start; min-width: 0; }
     .main-card { background: var(--surface); border-radius: var(--radius-lg); border: 1px solid rgba(219,227,238,.9); padding: 24px; display: flex; flex-direction: column; gap: 20px; box-shadow: var(--shadow-soft); }
     .card-header { display: flex; align-items: center; justify-content: space-between; }
     .card-title { font-size: 15px; font-weight: 600; color: var(--ink); } .card-meta { font-size: 11px; color: var(--soft); }
@@ -272,17 +286,6 @@
     .rule-status.fail { color: var(--danger); } .rule-status.fail .dot { background: var(--danger); }
     .rule-divider { height: 1px; background: var(--line-soft); }
 
-    /* 缩放控制 */
-    .zoom-ctl { display: inline-flex; align-items: center; gap: 6px; padding: 0 4px; }
-    .zoom-label { font-size: 11px; font-weight: 600; color: var(--soft); white-space: nowrap; }
-    .zoom-pct { font-size: 11px; font-weight: 600; color: var(--ink-2); min-width: 32px; text-align: center; font-family: var(--font-mono); }
-    .zoom-btn { width: 24px; height: 24px; border-radius: 6px; border: 1px solid var(--line); background: var(--surface); color: var(--ink-2); font-size: 14px; font-weight: 600; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all .12s; line-height: 1; }
-    .zoom-btn:hover { background: var(--primary-light); border-color: var(--primary); color: var(--primary); }
-    .zoom-slider { width: 80px; height: 4px; -webkit-appearance: none; appearance: none; background: var(--line); border-radius: 4px; outline: none; }
-    .zoom-slider::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 14px; height: 14px; border-radius: 50%; background: var(--primary); cursor: pointer; border: 2px solid #fff; box-shadow: 0 1px 3px rgba(0,0,0,.15); }
-    .zoom-reset { font-size: 10px; font-weight: 600; color: var(--primary); padding: 2px 8px; border-radius: 4px; background: var(--primary-light); cursor: pointer; transition: all .12s; }
-    .zoom-reset:hover { background: #dce8fc; }
-
     /* 规则卡片折叠 */
     .rules-panel { background: var(--surface); border-radius: var(--radius-lg); border: 1px solid rgba(219,227,238,.9); padding: 20px; display: flex; flex-direction: column; gap: 16px; align-self: start; box-shadow: var(--shadow-soft); }
     .rp-header { display: flex; align-items: center; justify-content: space-between; cursor: pointer; user-select: none; padding: 2px 0; }
@@ -318,9 +321,19 @@
     .subpanel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; }
     .subpanel h3 { font-size: 15px; font-weight: 600; color: var(--ink); margin-bottom: 12px; }
 
-    .links-row { display: flex; gap: 8px; flex-wrap: wrap; }
+    .report-export { display: none; align-items: center; justify-content: space-between; gap: 20px; padding: 18px 20px; border: 1px solid rgba(26,115,232,.16); border-radius: var(--radius); background: linear-gradient(135deg, rgba(241,247,255,.94), rgba(255,255,255,.98)); box-shadow: 0 12px 30px rgba(26,115,232,.08); }
+    .report-export-copy { display: grid; gap: 4px; min-width: 0; }
+    .report-export-title { color: var(--ink); font-size: 14px; font-weight: 700; }
+    .report-export-sub { color: var(--soft); font-size: 12px; line-height: 1.5; }
+    .links-row { display: flex; align-items: center; justify-content: flex-end; gap: 10px; flex-wrap: wrap; }
     .link-pill { display: inline-flex; align-items: center; gap: 6px; padding: 8px 14px; border-radius: 999px; font-size: 12px; font-weight: 600; color: var(--primary); background: var(--primary-light); text-decoration: none; transition: all .15s; border: 0; cursor: pointer; }
     .link-pill:hover { background: #dce8fc; } .link-pill.muted { color: var(--muted); background: var(--line-soft); } .link-pill.muted:hover { background: #e8ebf2; }
+    .report-action { min-height: 42px; padding: 0 18px; border-radius: 10px; font-size: 14px; letter-spacing: 0; white-space: nowrap; border: 1px solid rgba(26,115,232,.22); box-shadow: 0 10px 24px rgba(26,115,232,.14), inset 0 1px 0 rgba(255,255,255,.34); }
+    .report-action.primary { color: #fff; background: linear-gradient(135deg, #2683EF, #1767C5); }
+    .report-action.primary:hover { color: #fff; background: linear-gradient(135deg, #1F78DC, #1459AC); transform: translateY(-1px); }
+    .report-action.secondary { color: #1767C5; background: rgba(235,244,255,.94); }
+    .report-action.secondary:hover { color: #1459AC; background: #E0EEFF; transform: translateY(-1px); }
+    .report-action .download-mark { width: 18px; height: 18px; display: grid; place-items: center; font-size: 17px; line-height: 1; font-weight: 700; }
     .ai-panel { display: none; border: 1px solid rgba(26,115,232,.16); background: linear-gradient(180deg, #F8FBFF 0%, #FFFFFF 100%); border-radius: var(--radius); padding: 16px; box-shadow: 0 12px 30px rgba(26,115,232,.06); }
     .ai-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
     .ai-title { font-size: 14px; font-weight: 700; color: var(--ink); }
@@ -334,6 +347,11 @@
     .ai-point.conclusion { background: #EFF6FF; border-color: #BFDBFE; }
     .ai-point.action { background: #FFF7ED; border-color: #FED7AA; }
     .link-pill:disabled { opacity: .55; cursor: wait; }
+    .right-rail .ai-panel { padding: 20px; }
+    .right-rail .ai-head { align-items: stretch; flex-direction: column; }
+    .right-rail .ai-head .link-pill { width: 100%; justify-content: center; }
+    .right-rail .ai-output { max-height: 420px; }
+    .right-rail .ai-point { grid-template-columns: 46px minmax(0, 1fr); padding: 10px; }
 
     .empty-state { display: grid; place-items: center; min-height: 400px; color: var(--soft); text-align: center; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-lg); }
     .empty-state .icon { width: 64px; height: 64px; border-radius: 16px; background: var(--primary-light); color: var(--primary); display: grid; place-items: center; font-size: 28px; margin: 0 auto 16px; }
@@ -346,8 +364,193 @@
     .batch-progress .text { font-size: 14px; color: var(--ink); font-weight: 500; }
     .batch-progress .sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
 
-    @media (max-width: 1200px) { .shell { grid-template-columns: 1fr; } .sidebar { border-right: none; border-bottom: 1px solid var(--line); } .detail-row { grid-template-columns: 1fr; } .kpi-row { grid-template-columns: repeat(2, 1fr); } .aux-grid { grid-template-columns: repeat(2, 1fr); } }
-    @media (max-width: 640px) { .kpi-row, .aux-grid, .sub-grid, .metric-detail-grid, .rule-summary-grid { grid-template-columns: 1fr; } .topnav { padding: 0 16px; } .app-title { font-size: 15px; } .main { padding: 14px; gap: 14px; } }
+    /* Liquid glass material system */
+    :root {
+      --bg: #F7FAFE;
+      --surface: rgba(255, 255, 255, .88);
+      --surface-2: rgba(252, 253, 255, .84);
+      --line: rgba(122, 144, 171, .24);
+      --line-soft: rgba(122, 144, 171, .13);
+      --glass: rgba(255, 255, 255, .82);
+      --glass-strong: rgba(255, 255, 255, .94);
+      --glass-line: rgba(255, 255, 255, .78);
+      --glass-shadow: 0 18px 46px rgba(49, 73, 104, .075), inset 0 1px 0 rgba(255, 255, 255, .96);
+      --glass-shadow-hover: 0 24px 56px rgba(49, 73, 104, .12), inset 0 1px 0 #fff;
+      --shadow-card: var(--glass-shadow-hover);
+      --shadow-soft: 0 12px 34px rgba(36, 57, 82, .08), inset 0 1px 0 rgba(255, 255, 255, .74);
+    }
+    html { background: #F5F8FC; }
+    body {
+      position: relative;
+      isolation: isolate;
+      background:
+        linear-gradient(118deg, rgba(255,255,255,.96) 0%, rgba(255,255,255,.68) 48%, rgba(232,242,255,.42) 100%),
+        linear-gradient(180deg, #F7FAFF 0%, #FFFFFF 52%, #F4F8FD 100%);
+      background-attachment: fixed;
+    }
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      z-index: -1;
+      pointer-events: none;
+      background:
+        repeating-linear-gradient(90deg, rgba(89,117,151,.035) 0 1px, transparent 1px 96px),
+        repeating-linear-gradient(0deg, rgba(89,117,151,.025) 0 1px, transparent 1px 96px);
+      mask-image: linear-gradient(180deg, rgba(0,0,0,.78), transparent 88%);
+    }
+    .app-title, .page-title, .kpi-value { letter-spacing: 0; }
+
+    .topnav {
+      background: rgba(255, 255, 255, .84);
+      border-bottom-color: rgba(255,255,255,.82);
+      box-shadow: 0 12px 36px rgba(40,61,86,.10), inset 0 -1px 0 rgba(122,144,171,.15);
+      -webkit-backdrop-filter: blur(28px) saturate(165%);
+      backdrop-filter: blur(28px) saturate(165%);
+    }
+    .logo {
+      border: 1px solid rgba(255,255,255,.66);
+      background: linear-gradient(145deg, rgba(37,131,239,.95), rgba(17,106,181,.94));
+      box-shadow: 0 12px 28px rgba(26,115,232,.24), inset 0 1px 0 rgba(255,255,255,.44);
+    }
+    .status-pill, .nav-link {
+      background: rgba(255,255,255,.54);
+      border-color: rgba(255,255,255,.82);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.9), 0 8px 18px rgba(51,71,96,.06);
+      -webkit-backdrop-filter: blur(14px) saturate(145%);
+      backdrop-filter: blur(14px) saturate(145%);
+    }
+    .nav-link:hover { background: rgba(231,241,255,.84); box-shadow: 0 10px 24px rgba(26,115,232,.13), inset 0 1px 0 #fff; }
+
+    .sidebar {
+      background: rgba(255, 255, 255, .74);
+      border-right-color: rgba(255,255,255,.82);
+      box-shadow: 14px 0 42px rgba(51,71,96,.07), inset -1px 0 0 rgba(122,144,171,.12);
+      -webkit-backdrop-filter: blur(24px) saturate(145%);
+      backdrop-filter: blur(24px) saturate(145%);
+    }
+    .dropzone, .file-card, .param-row, .sb-hint, .ghost-btn, .file-list-hint {
+      background: rgba(255,255,255,.70);
+      border-color: rgba(255,255,255,.82);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.88), 0 7px 18px rgba(52,73,98,.045);
+    }
+    .dropzone { border-color: rgba(104,132,165,.38); }
+    .dropzone:hover, .dropzone.dragover {
+      background: rgba(235,244,255,.78);
+      border-color: rgba(26,115,232,.72);
+      box-shadow: inset 0 1px 0 #fff, 0 14px 28px rgba(26,115,232,.11);
+      transform: translateY(-1px);
+    }
+    .file-card[open] { background: rgba(255,255,255,.78); border-color: rgba(255,255,255,.92); box-shadow: 0 14px 30px rgba(42,64,89,.10), inset 0 1px 0 #fff; }
+    .file-param input, .param-row input {
+      background: rgba(255,255,255,.74);
+      border-color: rgba(124,145,170,.24);
+      box-shadow: inset 0 1px 3px rgba(46,65,88,.05), 0 1px 0 rgba(255,255,255,.9);
+    }
+    .diag-btn {
+      position: relative;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,.48);
+      background: linear-gradient(135deg, rgba(42,130,239,.98), rgba(23,103,197,.98));
+      box-shadow: 0 15px 30px rgba(25,111,186,.25), inset 0 1px 0 rgba(255,255,255,.36);
+    }
+    .diag-btn:hover { filter: brightness(1.04) saturate(1.08); box-shadow: 0 18px 36px rgba(25,111,186,.31), inset 0 1px 0 rgba(255,255,255,.48); }
+
+    .result-switcher, .kpi-card, .evidence-strip, .main-card, .rules-panel, .subpanel, .ai-panel, .empty-state, .batch-progress {
+      position: relative;
+      border-color: rgba(255,255,255,.84);
+      background: var(--glass);
+      box-shadow: var(--glass-shadow);
+      -webkit-backdrop-filter: blur(22px) saturate(150%);
+      backdrop-filter: blur(22px) saturate(150%);
+    }
+    .result-switcher::before, .kpi-card::before, .evidence-strip::before, .main-card::before, .rules-panel::before, .subpanel::before, .ai-panel::before, .empty-state::before {
+      content: "";
+      position: absolute;
+      inset: 0 18px auto;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,.98), transparent);
+      pointer-events: none;
+    }
+    .kpi-card {
+      isolation: isolate;
+      overflow: hidden;
+      transition: transform .22s ease, box-shadow .22s ease, border-color .22s ease;
+    }
+    .kpi-card::after {
+      content: "";
+      position: absolute;
+      inset: -40% -55%;
+      z-index: 0;
+      pointer-events: none;
+      background: linear-gradient(112deg, transparent 42%, rgba(255,255,255,.58) 50%, transparent 58%);
+      transform: translateX(-38%);
+      transition: transform .65s cubic-bezier(.2,.8,.2,1);
+    }
+    .kpi-card > * { position: relative; z-index: 1; }
+    .kpi-card:hover { transform: translateY(-4px); border-color: rgba(255,255,255,.98); box-shadow: var(--glass-shadow-hover); }
+    .kpi-card:hover::after { transform: translateX(38%); }
+    .main-card, .rules-panel { background: rgba(255,255,255,.86); }
+    .curve-panel {
+      background: rgba(255,255,255,.95);
+      border-color: rgba(255,255,255,.94);
+      box-shadow: 0 18px 38px rgba(42,64,89,.08), inset 0 1px 0 #fff;
+    }
+    .metric-details, .metric-detail-chip, .aux-item, .rule-summary-card, .rule-item, .segment-item, .ai-output, .ai-point {
+      background: rgba(248,250,253,.70);
+      border-color: rgba(135,156,181,.14);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.80);
+    }
+    .metric-details[open] { background: rgba(255,255,255,.82); border-color: rgba(255,255,255,.96); box-shadow: 0 16px 36px rgba(40,61,86,.09), inset 0 1px 0 #fff; }
+    .section-tab, .result-chip, .curve-chip, .link-pill {
+      border: 1px solid rgba(255,255,255,.72);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.72);
+    }
+    .section-tab.active, .result-chip.active {
+      background: linear-gradient(135deg, #1A73E8, #1767C5);
+      border-color: rgba(255,255,255,.5);
+      box-shadow: 0 10px 24px rgba(26,115,232,.20), inset 0 1px 0 rgba(255,255,255,.32);
+    }
+    th { background: rgba(238,244,250,.62); }
+    * { scrollbar-color: rgba(98,120,145,.55) rgba(255,255,255,.20); scrollbar-width: thin; }
+    ::-webkit-scrollbar { width: 10px; height: 10px; }
+    ::-webkit-scrollbar-track { background: rgba(255,255,255,.22); }
+    ::-webkit-scrollbar-thumb { background: rgba(98,120,145,.42); border: 3px solid transparent; background-clip: padding-box; border-radius: 999px; }
+    ::-webkit-scrollbar-thumb:hover { background-color: rgba(74,98,127,.58); }
+
+    @supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+      .topnav, .sidebar, .result-switcher, .kpi-card, .evidence-strip, .main-card, .rules-panel, .subpanel, .ai-panel, .empty-state { background: rgba(250,252,255,.96); }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .kpi-card, .kpi-card::after, .dropzone, .diag-btn { transition: none; }
+    }
+
+    @media (max-width: 1200px) {
+      .shell { grid-template-columns: 1fr; }
+      .sidebar { border-right: none; border-bottom: 1px solid var(--line); overflow: visible; }
+      .sidebar-scroll { overflow: visible; }
+      .sidebar-action { padding-bottom: max(14px, env(safe-area-inset-bottom)); }
+      .main { overflow-y: visible; }
+      .detail-row { grid-template-columns: 1fr; }
+      .kpi-row { grid-template-columns: repeat(2, 1fr); }
+      .aux-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 640px) {
+      .kpi-row, .aux-grid, .sub-grid, .metric-detail-grid, .rule-summary-grid { grid-template-columns: 1fr; }
+      .topnav { height: 64px; padding: 0 12px; }
+      .logo { width: 38px; height: 38px; border-radius: 12px; }
+      .app-title { font-size: 14px; }
+      .app-subtitle, .status-pill { display: none; }
+      .nav-left { max-width: calc(100% - 112px); }
+      .brand-copy { overflow: hidden; }
+      .app-title { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+      .nav-right { position: absolute; right: 12px; gap: 6px; }
+      .nav-link { height: 34px; padding: 0 12px; }
+      .main { padding: 14px; gap: 14px; }
+      .report-export { align-items: stretch; flex-direction: column; }
+      .links-row { justify-content: stretch; }
+      .report-action { flex: 1 1 100%; justify-content: center; }
+    }
   </style>
 </head>
 <body>
@@ -367,51 +570,47 @@
   </div>
   <div class="nav-right">
     <span class="status-pill"><span class="status-dot" id="navDot"></span><span class="status-label" id="navStatus">系统就绪</span></span>
-    <a class="nav-link" href="/rules">判定规则</a>
+    <a class="nav-link" href="/rules" id="rulesLink">判定规则</a>
   </div>
 </nav>
 
 <div class="shell">
   <aside class="sidebar">
-    <span class="sb-title">导入数据</span>
-    <div class="sb-section">
-      <div class="dropzone" id="dropzone">
-        <div class="dropzone-icon">⤴</div>
-        <div class="dropzone-text">点击或拖拽文件至此处</div>
-        <div class="dropzone-hint">支持 .csv / .xlsx / .xls · 批量多选</div>
-        <input type="file" id="uploadInput" accept=".csv,.xlsx,.xls" multiple style="display:none" />
+    <div class="sidebar-scroll">
+      <span class="sb-title">导入数据</span>
+      <div class="sb-section">
+        <div class="dropzone" id="dropzone">
+          <div class="dropzone-icon">⤴</div>
+          <div class="dropzone-text">点击或拖拽文件至此处</div>
+          <div class="dropzone-hint">支持 .csv / .xlsx / .xls · 批量多选</div>
+          <input type="file" id="uploadInput" accept=".csv,.xlsx,.xls" multiple style="display:none" />
+        </div>
+        <div class="file-list" id="fileList"><div class="file-empty">尚未选择文件</div></div>
+        <div class="file-list-hint">提示：点击文件行可展开，单独调整这一组数据的判定参数。</div>
       </div>
-      <div class="file-list" id="fileList"><div class="file-empty">尚未选择文件</div></div>
-      <div class="file-list-hint">提示：点击文件行可展开，单独调整这一组数据的判定参数。</div>
+
+      <div class="sb-section">
+        <span class="sb-title">判定参数</span>
+        <div class="param-row"><label>设定压力</label><input id="setPressure" type="number" step="0.001" value="2.5" /></div>
+        <div class="param-row"><label>稳压精度 AC %</label><input id="acKpa" type="number" step="0.1" value="10" /></div>
+        <div class="param-row"><label>关闭压力 SG %</label><input id="sgKpa" type="number" step="0.1" value="20" /></div>
+        <div class="param-row"><label>极值点数 N</label><input id="extremeSampleN" type="number" step="1" min="1" value="20" /></div>
+        <div class="param-row"><label>泄漏量限值</label><input id="seatLeakLimit" type="number" step="0.001" value="0.2" /></div>
+        <div class="param-row"><label>压力估算限值</label><input id="seatLeakSurrogateLimit" type="number" step="0.001" value="0.5" /></div>
+        <div class="sb-hint" id="thresholdPreview"></div>
+        <button class="ghost-btn" id="applyParamsAll" type="button">应用当前参数到全部文件</button>
+        <div class="sb-status" id="status"></div>
+      </div>
     </div>
 
-    <div class="sb-section">
-      <span class="sb-title">判定参数</span>
-      <div class="param-row"><label>设定压力</label><input id="setPressure" type="number" step="0.001" value="2.5" /></div>
-      <div class="param-row"><label>稳压精度 AC %</label><input id="acKpa" type="number" step="0.1" value="10" /></div>
-      <div class="param-row"><label>关闭压力 SG %</label><input id="sgKpa" type="number" step="0.1" value="20" /></div>
-      <div class="param-row"><label>极值点数 N</label><input id="extremeSampleN" type="number" step="1" min="1" value="20" /></div>
-      <div class="param-row"><label>泄漏量限值</label><input id="seatLeakLimit" type="number" step="0.001" value="0.2" /></div>
-      <div class="param-row"><label>压力估算限值</label><input id="seatLeakSurrogateLimit" type="number" step="0.001" value="0.5" /></div>
-      <div class="sb-hint" id="thresholdPreview"></div>
-      <button class="ghost-btn" id="applyParamsAll" type="button">应用当前参数到全部文件</button>
-      <div class="sb-status" id="status"></div>
+    <div class="sidebar-action">
+      <button class="diag-btn" id="diagnoseBtn"><span>▶</span> <span id="diagBtnLabel">开始诊断</span></button>
     </div>
-
-    <button class="diag-btn" id="diagnoseBtn"><span>▶</span> <span id="diagBtnLabel">开始诊断</span></button>
   </aside>
 
   <main class="main">
     <div class="page-header">
       <div><h1 class="page-title">诊断概览</h1><div class="page-meta" id="pageMeta">导入数据文件后开始诊断</div></div>
-      <div class="zoom-ctl">
-        <span class="zoom-label">缩放</span>
-        <button class="zoom-btn" onclick="adjustZoom(-5)" title="缩小">-</button>
-        <input type="range" class="zoom-slider" id="zoomSlider" min="60" max="120" value="75" oninput="setZoom(this.value)" title="拖动调整缩放比例" />
-        <span class="zoom-pct" id="zoomPct">75%</span>
-        <button class="zoom-btn" onclick="adjustZoom(5)" title="放大">+</button>
-        <span class="zoom-reset" onclick="setZoom(75)" title="恢复默认比例">重置</span>
-      </div>
       <div class="result-switcher" id="resultSwitcher" style="display:none"></div>
     </div>
 
@@ -428,10 +627,10 @@
 
     <div class="detail-row" id="detailRow" style="display:none">
       <div class="main-card" id="mainCard">
-        <div class="card-header"><span class="card-title" id="cardTitle">核心性能指标详情</span><span class="card-meta" id="cardMeta"></span></div>
+        <div class="card-header"><span class="card-title" id="cardTitle">诊断详情</span><span class="card-meta" id="cardMeta"></span></div>
 
         <div class="section-tabs" id="sectionTabs">
-          <button class="section-tab active" data-view="core">核心性能指标详情</button>
+          <button class="section-tab active" data-view="core">核心性能指标</button>
           <button class="section-tab" data-view="aux">辅助证据</button>
           <button class="section-tab" data-view="quality">导入识别</button>
         </div>
@@ -469,6 +668,34 @@
           <div class="subpanel"><h3>导入识别</h3><table id="qualityTable"></table></div>
         </div>
 
+        <div class="report-export" id="reportExport">
+          <div class="report-export-copy">
+            <span class="report-export-title">诊断报告</span>
+            <span class="report-export-sub">导出当前诊断结果，或一次下载本批次全部 PDF 报告。</span>
+          </div>
+          <div class="links-row" id="linksRow"></div>
+        </div>
+
+      </div>
+
+      <div class="right-rail">
+        <div class="rules-panel" id="rulesPanel">
+          <div class="rp-header" onclick="toggleRules()" title="点击展开/收起规则详情">
+            <span class="rp-title"><span class="rp-toggle" id="rpToggle">&#9654;</span> 规则触发</span>
+            <span class="rp-count clear" id="rpCount">0 条</span>
+          </div>
+          <div id="ruleItems"></div>
+          <div class="segment-panel" id="segmentPanel">
+            <div class="segment-head">
+              <span class="segment-title">异常片段定位</span>
+              <span class="segment-count" id="segmentCount">0 段</span>
+            </div>
+            <div class="segment-list" id="segmentList">
+              <div class="segment-empty">完成诊断后显示可定位的压力异常片段。</div>
+            </div>
+          </div>
+        </div>
+
         <div class="ai-panel" id="aiPanel">
           <div class="ai-head">
             <div>
@@ -478,25 +705,6 @@
             <button class="link-pill" id="aiAnalysisBtn" type="button">生成分析意见</button>
           </div>
           <div class="ai-output" id="aiOutput">完成诊断后，可生成一段面向报告说明的分析意见。</div>
-        </div>
-
-        <div class="links-row" id="linksRow"></div>
-      </div>
-
-      <div class="rules-panel" id="rulesPanel">
-        <div class="rp-header" onclick="toggleRules()" title="点击展开/收起规则详情">
-          <span class="rp-title"><span class="rp-toggle" id="rpToggle">&#9654;</span> 规则触发</span>
-          <span class="rp-count clear" id="rpCount">0 条</span>
-        </div>
-        <div id="ruleItems"></div>
-        <div class="segment-panel" id="segmentPanel">
-          <div class="segment-head">
-            <span class="segment-title">异常片段定位</span>
-            <span class="segment-count" id="segmentCount">0 段</span>
-          </div>
-          <div class="segment-list" id="segmentList">
-            <div class="segment-empty">完成诊断后显示可定位的压力异常片段。</div>
-          </div>
         </div>
       </div>
     </div>
@@ -513,6 +721,96 @@ let batchResults = [];
 let activeResultIdx = 0;
 let lastResult = null;
 let selectedCurveSegment = null;
+const DIAGNOSIS_STATE_KEY = "gas_diagnosis_state_v1";
+
+function compactResultForStorage(result, maxCurvePoints) {
+  if (!result || !Array.isArray(result.curve) || result.curve.length <= maxCurvePoints) return result;
+  var copy = Object.assign({}, result);
+  var last = result.curve.length - 1;
+  copy.curve = Array.from({length: maxCurvePoints}, function(_, index) {
+    return result.curve[Math.round(index * last / Math.max(maxCurvePoints - 1, 1))];
+  });
+  return copy;
+}
+
+function persistDiagnosisState() {
+  if (!batchResults.length) return;
+  var activeTab = document.querySelector(".section-tab.active");
+  var state = {
+    version: 1,
+    savedAt: Date.now(),
+    batchResults: batchResults,
+    activeResultIdx: activeResultIdx,
+    performanceParams: performanceParams(),
+    activeView: activeTab ? activeTab.dataset.view : "core",
+    aiOutputHtml: $("aiOutput") ? $("aiOutput").innerHTML : "",
+    aiMetaText: $("aiMeta") ? $("aiMeta").textContent : ""
+  };
+  try {
+    sessionStorage.setItem(DIAGNOSIS_STATE_KEY, JSON.stringify(state));
+  } catch (error) {
+    try {
+      state.batchResults = batchResults.map(function(result) {
+        return compactResultForStorage(result, 1600);
+      });
+      sessionStorage.setItem(DIAGNOSIS_STATE_KEY, JSON.stringify(state));
+    } catch (fallbackError) {
+      console.warn("诊断结果会话保存失败", fallbackError);
+    }
+  }
+}
+
+function clearPersistedDiagnosisState() {
+  try { sessionStorage.removeItem(DIAGNOSIS_STATE_KEY); } catch (error) { /* ignore */ }
+}
+
+function restorePerformanceParams(params) {
+  var values = params || {};
+  var controls = {
+    set_pressure_kpa: "setPressure",
+    ac_percent: "acKpa",
+    sg_percent: "sgKpa",
+    extreme_sample_n: "extremeSampleN",
+    seat_leak_limit: "seatLeakLimit",
+    seat_leak_surrogate_limit_kpa: "seatLeakSurrogateLimit"
+  };
+  Object.keys(controls).forEach(function(key) {
+    if (values[key] === undefined || values[key] === null || !$(controls[key])) return;
+    $(controls[key]).value = values[key];
+  });
+  updateThresholdPreview();
+}
+
+function restoreDiagnosisState() {
+  var raw = "";
+  try { raw = sessionStorage.getItem(DIAGNOSIS_STATE_KEY) || ""; } catch (error) { return false; }
+  if (!raw) return false;
+  try {
+    var state = JSON.parse(raw);
+    if (!state || !Array.isArray(state.batchResults) || !state.batchResults.length) return false;
+    batchResults = state.batchResults;
+    activeResultIdx = Math.max(0, Math.min(Number(state.activeResultIdx) || 0, batchResults.length - 1));
+    if (!batchResults[activeResultIdx] || batchResults[activeResultIdx].error) {
+      var firstValid = batchResults.findIndex(function(result) { return result && !result.error; });
+      activeResultIdx = firstValid >= 0 ? firstValid : 0;
+    }
+    restorePerformanceParams(state.performanceParams);
+    renderResultSwitcher();
+    if (batchResults[activeResultIdx] && !batchResults[activeResultIdx].error) {
+      renderResult(batchResults[activeResultIdx]);
+      switchDetailView(state.activeView || "core");
+      if (state.aiOutputHtml && $("aiOutput")) $("aiOutput").innerHTML = sanitizeAiText(state.aiOutputHtml);
+      if (state.aiMetaText && $("aiMeta")) $("aiMeta").textContent = state.aiMetaText;
+      setStatus("已恢复上次诊断结果", true);
+    } else {
+      setStatus("上次诊断未产生有效结果", true);
+    }
+    return true;
+  } catch (error) {
+    clearPersistedDiagnosisState();
+    return false;
+  }
+}
 
 const $ = function(id) { return document.getElementById(id); };
 const esc = function(v) { return String(v ?? "").replace(/[&<>"']/g, function(ch) { return ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[ch]; }); };
@@ -1048,11 +1346,11 @@ function switchDetailView(name) {
   }
 }
 
-function currentHtmlReports() {
+function currentPdfReports() {
   return batchResults.map(function(r, idx) {
     if (!r || r.error) return null;
     var links = r.report_links || {};
-    var path = links.overview_html || links.html || "";
+    var path = links.overview_pdf || links.pdf || "";
     if (!path) return null;
     return {
       name: r.source_filename || (r.features && r.features.station) || ("diagnosis_" + (idx + 1)),
@@ -1061,28 +1359,11 @@ function currentHtmlReports() {
   }).filter(Boolean);
 }
 
-async function downloadBatchHtmlReports() {
-  var reports = currentHtmlReports();
-  if (!reports.length) { setStatus("暂无可下载的HTML报告", true); return; }
+async function downloadBatchPdfReports() {
+  var reports = currentPdfReports();
+  if (!reports.length) { setStatus("暂无可下载的PDF报告", true); return; }
 
-  /* 桌面版：使用原生保存对话框 */
-  if (window.pywebview && window.pywebview.api && window.pywebview.api.save_reports_zip) {
-    setStatus("正在打包HTML报告…", true);
-    try {
-      var result = await window.pywebview.api.save_reports_zip(JSON.stringify(reports));
-      if (result && result.ok) {
-        setStatus("已保存到: " + result.path, true);
-      } else {
-        setStatus("保存失败: " + ((result && result.error) || "未知错误"), true);
-      }
-    } catch (err) {
-      setStatus("保存失败: " + (err.message || err), true);
-    }
-    return;
-  }
-
-  /* 浏览器版：blob 下载 */
-  setStatus("正在打包HTML报告…", true);
+  setStatus("正在打包PDF报告…", true);
   try {
     var res = await fetch("/api/reports_zip", {
       method: "POST",
@@ -1094,12 +1375,12 @@ async function downloadBatchHtmlReports() {
     var url = URL.createObjectURL(blob);
     var a = document.createElement("a");
     a.href = url;
-    a.download = "本次诊断HTML报告.zip";
+    a.download = "本次诊断PDF报告.zip";
     document.body.appendChild(a);
     a.click();
     a.remove();
     URL.revokeObjectURL(url);
-    setStatus("HTML报告压缩包已生成", true);
+    setStatus("PDF报告压缩包已生成", true);
   } catch (err) {
     setStatus("批量下载失败：" + err.message, true);
   }
@@ -1127,8 +1408,19 @@ function cleanAiLine(text) {
     .trim();
 }
 
+function sanitizeAiText(text) {
+  return String(text || "")
+    .replace(/KNN\s*异常信号/gi, "辅助异常信号")
+    .replace(/\bKNN\b/gi, "辅助分析")
+    .replace(/\bwave[_\s-]*count\b/gi, "压力波动")
+    .replace(/\bIsolation\s*Forest\b/gi, "辅助分析")
+    .replace(/(^|[^A-Za-z])IF(?=[^A-Za-z]|$)/g, "$1辅助分析")
+    .replace(/\bbaseline[_\s-]*score\b/gi, "历史偏离程度")
+    .replace(/\btop[_\s-]*features\b/gi, "主要影响因素");
+}
+
 function formatAiContent(content) {
-  var text = String(content || "").replace(/\r/g, "\n");
+  var text = sanitizeAiText(content).replace(/\r/g, "\n");
   text = text.replace(/\*\*/g, "");
   var parsed = text
     .split(/\n+|(?=结论[:：])|(?=重点\d*[:：])|(?=建议[:：])|(?=复核[:：])/)
@@ -1196,6 +1488,7 @@ async function generateAiAnalysis() {
     setStatus("智能分析生成失败：" + (err.message || err), true);
   } finally {
     if (btn) btn.disabled = false;
+    persistDiagnosisState();
   }
 }
 
@@ -1228,7 +1521,7 @@ function renderResult(data) {
   $("p03Badge").textContent=p03.label||"—"; $("p03Badge").className="kpi-badge "+levelBadgeClass(p03.level);
   $("p03Sub").textContent=p03.unit==="%"?"密封爬升指数，非实测泄漏量":"实测/导入泄漏量";
 
-  $("cardTitle").textContent="核心性能指标详情"; $("cardMeta").textContent="站点: "+esc(f.station||"—")+" · "+esc(f.start||"—");
+  $("cardTitle").textContent="诊断详情"; $("cardMeta").textContent="站点: "+esc(f.station||"—")+" · "+esc(f.start||"—");
   $("metricGrid").innerHTML=items.map(function(i, idx){return metricCard(i, idx);}).join("");
 
   $("auxMean").textContent=fmt(f.mean,2); $("auxStd").textContent=fmt(f.std,3);
@@ -1264,24 +1557,26 @@ function renderResult(data) {
       '<div class="rule-summary-card"><strong>'+(codes.length-trig)+'</strong><span>未触发</span></div>' +
     '</div><div class="rule-list-collapse" id="ruleListCollapse"><div class="rule-list">'+cards+'</div></div>';
   renderSegmentLocator(data);
-  var overviewLink = links.overview_html || links.html || "";
-  var batchReports = currentHtmlReports();
+  var overviewLink = links.overview_pdf || links.pdf || "";
+  var batchReports = currentPdfReports();
   $("linksRow").innerHTML =
-    (overviewLink ? '<a class="link-pill" href="'+esc(overviewLink)+'" target="_blank">导出HTML报告</a>' : "") +
-    (batchReports.length ? '<button class="link-pill" id="downloadZipBtn" type="button">批量下载本次HTML报告</button>' : "");
+    (overviewLink ? '<a class="link-pill report-action primary" href="'+esc(overviewLink)+'" download><span class="download-mark" aria-hidden="true">↓</span> 导出当前PDF报告</a>' : "") +
+    (batchReports.length > 1 ? '<button class="link-pill report-action secondary" id="downloadZipBtn" type="button"><span class="download-mark" aria-hidden="true">↓</span> 批量导出PDF报告</button>' : "");
+  $("reportExport").style.display = overviewLink || batchReports.length > 1 ? "flex" : "none";
   var zipBtn = $("downloadZipBtn");
-  if (zipBtn) zipBtn.addEventListener("click", downloadBatchHtmlReports);
+  if (zipBtn) zipBtn.addEventListener("click", downloadBatchPdfReports);
   setStatus("诊断完成",true);
 }
 
 function renderResultSwitcher() {
   var sw=$("resultSwitcher"); if(batchResults.length<=1){sw.style.display="none";return;} sw.style.display="flex";
   sw.innerHTML=batchResults.map(function(r,i){var name=r.source_filename||(r.features&&r.features.station?r.features.station:"结果 "+(i+1));if(r.error)return'<button class="result-chip" data-idx="'+i+'">⚠ '+esc(name)+'</button>';var h=r.health||{};return'<button class="result-chip '+(i===activeResultIdx?"active":"")+'" data-idx="'+i+'"><span class="lvl-dot" style="background:'+healthDotColor(h.level)+'"></span>'+esc(name)+' · '+esc(h.label||"—")+'</button>';}).join("");
-  sw.querySelectorAll(".result-chip").forEach(function(btn){btn.addEventListener("click",function(){activeResultIdx=parseInt(btn.dataset.idx,10);sw.querySelectorAll(".result-chip").forEach(function(b){b.classList.remove("active");});btn.classList.add("active");renderResult(batchResults[activeResultIdx]);});});
+  sw.querySelectorAll(".result-chip").forEach(function(btn){btn.addEventListener("click",function(){activeResultIdx=parseInt(btn.dataset.idx,10);sw.querySelectorAll(".result-chip").forEach(function(b){b.classList.remove("active");});btn.classList.add("active");renderResult(batchResults[activeResultIdx]);persistDiagnosisState();});});
 }
 
 async function diagnoseBatch() {
   if(!fileQueue.length){setStatus("请先选择文件",true);return;}
+  clearPersistedDiagnosisState();
   var btn=$("diagnoseBtn"); btn.disabled=true; $("diagBtnLabel").textContent="诊断中…";
   $("batchProgress").style.display="flex"; setStatus("正在诊断…",true);
   batchResults=[]; activeResultIdx=0;
@@ -1289,6 +1584,7 @@ async function diagnoseBatch() {
   var ok=batchResults.filter(function(r){return !r.error;}).length, err=batchResults.length-ok;
   setStatus("诊断完成："+ok+" 个成功"+(err?" / "+err+" 个失败":""),true);
   renderResultSwitcher(); if(batchResults.length>0)renderResult(batchResults[0]);
+  persistDiagnosisState();
   btn.disabled=false; $("diagBtnLabel").textContent="开始诊断"; $("batchProgress").style.display="none";
 }
 
@@ -1303,27 +1599,7 @@ document.getElementById("sectionTabs").addEventListener("click",function(e){var 
 ["setPressure","acKpa","sgKpa","extremeSampleN","seatLeakLimit","seatLeakSurrogateLimit"].forEach(function(id){$(id).addEventListener("input",updateThresholdPreview);});
 $("applyParamsAll").addEventListener("click",applyGlobalParamsToFiles);
 $("diagnoseBtn").addEventListener("click",diagnoseBatch);
-
-/* ---- 缩放控制 ---- */
-(function() {
-  var saved = localStorage.getItem("gas_zoom") || "75";
-  setZoom(parseInt(saved, 10));
-})();
-
-function setZoom(v) {
-  var pct = Math.max(60, Math.min(120, parseInt(v, 10) || 85));
-  document.body.style.zoom = pct + "%";
-  var sl = document.getElementById("zoomSlider");
-  var dp = document.getElementById("zoomPct");
-  if (sl) sl.value = pct;
-  if (dp) dp.textContent = pct + "%";
-  localStorage.setItem("gas_zoom", String(pct));
-}
-
-function adjustZoom(delta) {
-  var sl = document.getElementById("zoomSlider");
-  setZoom((sl ? parseInt(sl.value, 10) : 85) + delta);
-}
+$("rulesLink").addEventListener("click",persistDiagnosisState);
 
 /* ---- 规则触发折叠 ---- */
 var rulesOpen = false;
@@ -1339,6 +1615,8 @@ function toggleRules() {
     collapse.style.maxHeight = "0";
   }
 }
+window.addEventListener("pagehide",persistDiagnosisState);
+restoreDiagnosisState();
 </script>
 </body>
 </html>

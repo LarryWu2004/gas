@@ -9,6 +9,8 @@ import json
 
 import pandas as pd
 
+from .pdf_report import render_html_to_pdf
+
 
 def _pct(value: float | int | None) -> str:
     if value is None:
@@ -917,7 +919,7 @@ def write_main_snapshot_html_report(result: dict, data: pd.DataFrame, output_dir
 <title>{_escape(links_station)} 诊断概览</title>
 <style>
 :root {{
-  --bg:#f0f4f8; --surface:#fff; --surface-2:#f8fafc; --ink:#111827; --muted:#667085; --soft:#98a2b3; --line:#dbe3ee; --line-soft:#edf1f6;
+  --bg:#f7faff; --surface:#fff; --surface-2:#fbfdff; --ink:#111827; --muted:#667085; --soft:#98a2b3; --line:#e3ebf5; --line-soft:#f1f5fa;
   --primary:#1a73e8; --primary-light:#e8f0fe; --success:#16a34a; --success-light:#e8f5e9; --warning:#f5b400; --warning-light:#fff4d6; --danger:#ea4335; --danger-light:#fde8e8;
   --shadow-soft:0 8px 22px rgba(17,24,39,.05); --shadow-card:0 14px 34px rgba(17,24,39,.08);
 }}
@@ -996,6 +998,12 @@ th {{ background:var(--surface-2); color:var(--soft); }}
 </head>
 <body>
 <main class="main">
+  <div class="main-card">
+    <section class="report-section">
+      <div class="report-section-title"><h2>导入识别</h2><span>文件结构与字段识别</span></div>
+      <table><tr><th>文件</th><td>{_escape(profile.get('file_name'))}</td><th>类型</th><td>{_escape(profile.get('file_type'))}</td></tr><tr><th>原始行/列</th><td>{_escape(profile.get('raw_rows'))}/{_escape(profile.get('raw_columns'))}</td><th>有效/无效</th><td>{_escape(profile.get('valid_rows'))}/{_escape(profile.get('invalid_rows'))}</td></tr><tr><th>站点</th><th>时间来源</th><th>压力列</th><th>有效样本</th><th>时间范围</th></tr>{block_rows}</table>
+    </section>
+  </div>
   <div class="page-header">
     <div>
       <h1 class="page-title">诊断概览</h1>
@@ -1194,7 +1202,7 @@ def write_main_snapshot_html_report(result: dict, data: pd.DataFrame, output_dir
 <title>{_escape(station)} 诊断概览</title>
 <style>
 :root {{
-  --bg:#f0f2f8; --surface:#fff; --surface-2:#f9fafb; --ink:#111827; --ink-2:#374151; --muted:#6b7280; --soft:#9ca3af;
+  --bg:#f7faff; --surface:#fff; --surface-2:#fbfdff; --ink:#111827; --ink-2:#374151; --muted:#6b7280; --soft:#9ca3af;
   --line:#e5e7eb; --line-soft:#f3f4f6; --primary:#1a73e8; --primary-light:#eef4ff; --success:#34a853; --success-light:#e8f5e9;
   --warning:#fbbc04; --warning-light:#fff8eb; --warning-text:#c26a00; --danger:#ea4335; --danger-light:#fde8e8;
   --radius:12px; --radius-sm:8px; --radius-lg:16px; --shadow-card:0 14px 34px rgba(17,24,39,.08); --shadow-soft:0 8px 22px rgba(17,24,39,.05);
@@ -1266,6 +1274,12 @@ table {{ width:100%; border-collapse:collapse; font-size:12px; }} th,td {{ paddi
 </head>
 <body>
 <main class="main">
+  <div class="main-card">
+    <section class="report-section">
+      <div class="report-section-title"><h2>导入识别</h2><span>文件结构与字段识别</span></div>
+      <table><tr><th>文件</th><td>{_escape(profile.get('file_name'))}</td><th>类型</th><td>{_escape(profile.get('file_type'))}</td></tr><tr><th>原始行/列</th><td>{_escape(profile.get('raw_rows'))}/{_escape(profile.get('raw_columns'))}</td><th>有效/无效</th><td>{_escape(profile.get('valid_rows'))}/{_escape(profile.get('invalid_rows'))}</td></tr><tr><th>站点</th><th>时间来源</th><th>压力列</th><th>有效样本</th><th>时间范围</th></tr>{block_rows}</table>
+    </section>
+  </div>
   <div class="page-header">
     <div><h1 class="page-title">诊断概览</h1><div class="page-meta">{_escape(result.get('source_filename') or '')} · {_escape(features.get('start'))} – {_escape(features.get('end'))} · {_escape(features.get('count'))} 样本</div></div>
   </div>
@@ -1296,10 +1310,6 @@ table {{ width:100%; border-collapse:collapse; font-size:12px; }} th,td {{ paddi
         <div class="report-section-title"><h2>辅助证据</h2><span>规则 / IF / KNN / 基线 / 趋势</span></div>
         <table><tr><th>规则等级</th><td>{_escape(ev.get('rule_level'))}</td><th>综合风险分</th><td>{_num(float(health.get('risk_score') or 0), 4)}</td></tr><tr><th>Isolation Forest</th><td>{_num(float(iso.get('score') or 0), 4)} / {_escape(iso.get('band_label'))}{(' / P' + _escape(iso.get('percentile'))) if iso.get('percentile') is not None else ''}</td><th>KNN</th><td>{_num(float(knn.get('score') or 0), 4)} / {_escape(knn.get('band_label'))}{(' / P' + _escape(knn.get('percentile'))) if knn.get('percentile') is not None else ''}</td></tr><tr><th>基线等级</th><td>{_escape(ev.get('baseline_level'))}</td><th>趋势等级</th><td>{_escape(ev.get('trend_level'))}</td></tr></table>
         <table><tr><th>说明</th></tr>{decision_rows}</table>
-      </section>
-      <section class="report-section">
-        <div class="report-section-title"><h2>导入识别</h2><span>文件结构与字段识别</span></div>
-        <table><tr><th>文件</th><td>{_escape(profile.get('file_name'))}</td><th>类型</th><td>{_escape(profile.get('file_type'))}</td></tr><tr><th>原始行/列</th><td>{_escape(profile.get('raw_rows'))}/{_escape(profile.get('raw_columns'))}</td><th>有效/无效</th><td>{_escape(profile.get('valid_rows'))}/{_escape(profile.get('invalid_rows'))}</td></tr><tr><th>站点</th><th>时间来源</th><th>压力列</th><th>有效样本</th><th>时间范围</th></tr>{block_rows}</table>
       </section>
     </div>
     <div class="rules-panel">
@@ -1466,7 +1476,7 @@ def write_reports(result: dict, data: pd.DataFrame, output_dir: Path) -> dict[st
 <style>
 :root {{
   color-scheme: light;
-  --bg: #F0F2F8;
+  --bg: #F7FAFF;
   --surface: #FFFFFF;
   --ink: #111827;
   --ink-2: #374151;
@@ -1731,9 +1741,13 @@ tr:last-child th, tr:last-child td {{ border-bottom: 0; }}
 </html>"""
     html_path.write_text(html_doc, encoding="utf-8")
     overview_path = write_main_snapshot_html_report(result, data, output_dir)
+    overview_pdf_path = Path(overview_path).with_suffix(".pdf")
+    render_html_to_pdf(overview_path, overview_pdf_path)
     return {
         "json": str(json_path),
         "markdown": str(md_path),
         "html": str(html_path),
         "overview_html": str(overview_path),
+        "pdf": str(overview_pdf_path),
+        "overview_pdf": str(overview_pdf_path),
     }
