@@ -391,7 +391,6 @@
       <div class="param-row"><label>稳压精度 AC %</label><input id="acKpa" type="number" step="0.1" value="10" /></div>
       <div class="param-row"><label>关闭压力 SG %</label><input id="sgKpa" type="number" step="0.1" value="20" /></div>
       <div class="param-row"><label>极值点数 N</label><input id="extremeSampleN" type="number" step="1" min="1" value="20" /></div>
-      <div class="param-row"><label>进口压力波动 %</label><input id="inletMaxFluct" type="number" step="0.1" value="5" /></div>
       <div class="param-row"><label>泄漏量限值</label><input id="seatLeakLimit" type="number" step="0.001" value="0.2" /></div>
       <div class="param-row"><label>压力估算限值</label><input id="seatLeakSurrogateLimit" type="number" step="0.001" value="0.5" /></div>
       <div class="sb-hint" id="thresholdPreview"></div>
@@ -530,7 +529,6 @@ function performanceParams() {
     ac_percent: $("acKpa").value,
     sg_percent: $("sgKpa").value,
     extreme_sample_n: $("extremeSampleN").value,
-    inlet_pressure_max_fluctuation_percent: $("inletMaxFluct").value,
     seat_leak_limit: $("seatLeakLimit").value,
     seat_leak_surrogate_limit_kpa: $("seatLeakSurrogateLimit").value
   };
@@ -543,7 +541,6 @@ function clonePerformanceParams(params) {
     ac_percent: p.ac_percent || "10",
     sg_percent: p.sg_percent || "20",
     extreme_sample_n: p.extreme_sample_n || "20",
-    inlet_pressure_max_fluctuation_percent: p.inlet_pressure_max_fluctuation_percent || "5",
     seat_leak_limit: p.seat_leak_limit || "0.2",
     seat_leak_surrogate_limit_kpa: p.seat_leak_surrogate_limit_kpa || "0.5"
   };
@@ -574,7 +571,7 @@ function updateThresholdPreview() {
   var surrogate = Number(p.seat_leak_surrogate_limit_kpa || 0);
   $("thresholdPreview").innerHTML =
     "AC" + fmt(acPercent,1) + " → 日间最高/最低N点测算实际AC%，合格线 ≤ " + fmt(acLimit,3) + " KPa<br>" +
-    "SG" + fmt(sgPercent,1) + " → 实测关闭压力测算实际SG%，合格线 ≤ " + fmt(sgLimit,3) + " KPa；进口压力波动前提 ≤ " + fmt(Number(p.inlet_pressure_max_fluctuation_percent || 5),1) + "%<br>" +
+    "SG" + fmt(sgPercent,1) + " → 实测关闭压力测算实际SG%，合格线 ≤ " + fmt(sgLimit,3) + " KPa<br>" +
     "阀座密封：有泄漏量列按泄漏量限值 " + fmt(leak,3) + " 判定；无泄漏量列按低流量片段密封爬升指数估算，压力估算限值上限 " + fmt(surrogate,3) + " KPa";
 }
 
@@ -660,7 +657,6 @@ function renderFileList() {
         fileParamInput(i, "ac_percent", "AC %", p.ac_percent, "0.1") +
         fileParamInput(i, "sg_percent", "SG %", p.sg_percent, "0.1") +
         fileParamInput(i, "extreme_sample_n", "极值点数N", p.extreme_sample_n, "1") +
-        fileParamInput(i, "inlet_pressure_max_fluctuation_percent", "进口波动%", p.inlet_pressure_max_fluctuation_percent, "0.1") +
         fileParamInput(i, "seat_leak_limit", "泄漏限值", p.seat_leak_limit, "0.001") +
         fileParamInput(i, "seat_leak_surrogate_limit_kpa", "压力估算限值", p.seat_leak_surrogate_limit_kpa, "0.001") +
       '</div>' +
@@ -1304,7 +1300,7 @@ dropzone.addEventListener("dragleave",function(){dropzone.classList.remove("drag
 dropzone.addEventListener("drop",function(e){e.preventDefault();dropzone.classList.remove("dragover");addFiles(e.dataTransfer.files);});
 uploadInput.addEventListener("change",function(){addFiles(uploadInput.files);uploadInput.value="";});
 document.getElementById("sectionTabs").addEventListener("click",function(e){var t=e.target.closest(".section-tab"); if(t)switchDetailView(t.dataset.view);});
-["setPressure","acKpa","sgKpa","extremeSampleN","inletMaxFluct","seatLeakLimit","seatLeakSurrogateLimit"].forEach(function(id){$(id).addEventListener("input",updateThresholdPreview);});
+["setPressure","acKpa","sgKpa","extremeSampleN","seatLeakLimit","seatLeakSurrogateLimit"].forEach(function(id){$(id).addEventListener("input",updateThresholdPreview);});
 $("applyParamsAll").addEventListener("click",applyGlobalParamsToFiles);
 $("diagnoseBtn").addEventListener("click",diagnoseBatch);
 

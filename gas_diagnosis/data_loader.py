@@ -343,31 +343,6 @@ def _pick_closing_pressure_column(df: pd.DataFrame, pressure_col: str) -> str | 
     return candidates[0][2]
 
 
-def _pick_inlet_pressure_column(df: pd.DataFrame, pressure_col: str) -> str | None:
-    candidates: list[tuple[float, int, object]] = []
-    for idx, col in enumerate(df.columns):
-        if col == pressure_col:
-            continue
-        if not _name_has_any(col, INLET_PRESSURE_NAME_KEYWORDS):
-            continue
-        numeric = pd.to_numeric(df[col], errors="coerce")
-        valid = numeric.dropna()
-        if valid.empty:
-            continue
-        timestamp_ratio, timestamp_quality = _datetime_quality(_to_datetime(df[col]))
-        if timestamp_ratio >= 0.8 and timestamp_quality >= 0.65:
-            continue
-        valid_ratio = float(valid.size) / max(len(df), 1)
-        plausible_ratio = float(valid.between(0.0, 200000.0).mean())
-        outlet_penalty = 0.35 if _name_has_any(col, OUTLET_PRESSURE_NAME_KEYWORDS) else 0.0
-        score = valid_ratio + plausible_ratio + 0.35 - outlet_penalty
-        candidates.append((score, -idx, col))
-    if not candidates:
-        return None
-    candidates.sort(reverse=True)
-    return candidates[0][2]
-
-
 def _timestamp_candidates(df: pd.DataFrame, pressure_col: str) -> list[tuple[float, float, str, pd.Series]]:
     columns = list(df.columns)
     non_pressure = [c for c in columns if c != pressure_col]
@@ -445,8 +420,6 @@ def load_pressure_file(path: Path) -> pd.DataFrame:
         leakage = pd.to_numeric(raw[leakage_col], errors="coerce") if leakage_col is not None else None
         closing_col = _pick_closing_pressure_column(raw, pressure_col)
         closing_pressure = pd.to_numeric(raw[closing_col], errors="coerce") if closing_col is not None else None
-        inlet_col = _pick_inlet_pressure_column(raw, pressure_col)
-        inlet_pressure = pd.to_numeric(raw[inlet_col], errors="coerce") if inlet_col is not None else None
         station = station_from_pressure_column(str(pressure_col).replace(".1", ""), path.stem)
         block = pd.DataFrame(
             {
@@ -460,8 +433,6 @@ def load_pressure_file(path: Path) -> pd.DataFrame:
                 "seat_leakage_column": str(leakage_col) if leakage_col is not None else "",
                 "closing_pressure_kpa": closing_pressure if closing_pressure is not None else pd.NA,
                 "closing_pressure_column": str(closing_col) if closing_col is not None else "",
-                "inlet_pressure_kpa": inlet_pressure if inlet_pressure is not None else pd.NA,
-                "inlet_pressure_column": str(inlet_col) if inlet_col is not None else "",
             }
         )
         block = block.dropna(subset=["timestamp", "pressure_kpa"])
@@ -491,7 +462,6 @@ def inspect_pressure_file(path: Path) -> dict:
         pressure = pd.to_numeric(raw[pressure_col], errors="coerce")
         leakage_col = _pick_leakage_column(raw, pressure_col)
         closing_col = _pick_closing_pressure_column(raw, pressure_col)
-        inlet_col = _pick_inlet_pressure_column(raw, pressure_col)
         station = station_from_pressure_column(str(pressure_col).replace(".1", ""), path.stem)
         valid_mask = timestamp.notna() & pressure.notna()
         valid_count = int(valid_mask.sum())
@@ -521,7 +491,6 @@ def inspect_pressure_file(path: Path) -> dict:
                 "pressure_column": str(pressure_col),
                 "seat_leakage_column": str(leakage_col) if leakage_col is not None else "",
                 "closing_pressure_column": str(closing_col) if closing_col is not None else "",
-                "inlet_pressure_column": str(inlet_col) if inlet_col is not None else "",
                 "valid_rows": valid_count,
                 "invalid_rows": invalid_count,
                 "start": start,

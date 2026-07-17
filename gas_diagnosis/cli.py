@@ -26,7 +26,6 @@ def _performance_params_from_args(args: argparse.Namespace) -> dict:
         "ac_percent": getattr(args, "ac_percent", None),
         "sg_percent": getattr(args, "sg_percent", None),
         "extreme_sample_n": getattr(args, "extreme_sample_n", None),
-        "inlet_pressure_max_fluctuation_percent": getattr(args, "inlet_pressure_max_fluctuation_percent", None),
         "seat_leak_limit": getattr(args, "seat_leak_limit", None),
         "seat_leak_surrogate_limit_kpa": getattr(args, "seat_leak_surrogate_limit_kpa", None),
         "ac_kpa": getattr(args, "ac_kpa", None),
@@ -258,7 +257,6 @@ def make_parser() -> argparse.ArgumentParser:
     p_diag.add_argument("--ac-percent", type=float, default=None, help="稳压精度等级AC，百分比")
     p_diag.add_argument("--sg-percent", type=float, default=None, help="关闭压力等级SG，百分比")
     p_diag.add_argument("--extreme-sample-n", type=int, default=None, help="AC测算时日间最高/最低压力点均值所取点数N")
-    p_diag.add_argument("--inlet-pressure-max-fluctuation-percent", type=float, default=None, help="AC/SG前提校核：进口压力允许最大波动百分比")
     p_diag.add_argument("--seat-leak-limit", type=float, default=None, help="阀座泄漏量限值，单位与导入泄漏量字段一致")
     p_diag.add_argument("--seat-leak-surrogate-limit-kpa", type=float, default=None, help="无泄漏量字段时的压力采样估算限值，单位KPa")
     p_diag.add_argument("--ac-kpa", type=float, default=None, help="兼容旧版：稳压性能允许偏差AC，单位KPa")
@@ -276,7 +274,6 @@ def make_parser() -> argparse.ArgumentParser:
     p_batch.add_argument("--ac-percent", type=float, default=None, help="稳压精度等级AC，百分比")
     p_batch.add_argument("--sg-percent", type=float, default=None, help="关闭压力等级SG，百分比")
     p_batch.add_argument("--extreme-sample-n", type=int, default=None, help="AC测算时日间最高/最低压力点均值所取点数N")
-    p_batch.add_argument("--inlet-pressure-max-fluctuation-percent", type=float, default=None, help="AC/SG前提校核：进口压力允许最大波动百分比")
     p_batch.add_argument("--seat-leak-limit", type=float, default=None, help="阀座泄漏量限值，单位与导入泄漏量字段一致")
     p_batch.add_argument("--seat-leak-surrogate-limit-kpa", type=float, default=None, help="无泄漏量字段时的压力采样估算限值，单位KPa")
     p_batch.add_argument("--ac-kpa", type=float, default=None, help="兼容旧版：稳压性能允许偏差AC，单位KPa")

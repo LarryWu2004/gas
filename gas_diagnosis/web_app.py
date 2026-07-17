@@ -91,7 +91,6 @@ def _performance_params_from_payload(payload: dict | None) -> dict:
         "ac_percent",
         "sg_percent",
         "extreme_sample_n",
-        "inlet_pressure_max_fluctuation_percent",
         "seat_leak_limit",
         "seat_leak_surrogate_limit_kpa",
         "ac_kpa",

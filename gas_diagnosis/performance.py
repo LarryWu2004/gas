@@ -10,7 +10,6 @@ DEFAULT_PERFORMANCE_PARAMS = {
     "ac_percent": 10.0,
     "sg_percent": 20.0,
     "extreme_sample_n": 20,
-    "inlet_pressure_max_fluctuation_percent": 5.0,
     "seat_leak_limit": 0.20,
     "seat_leak_unit": "同输入单位",
     "seat_leak_surrogate_limit_kpa": 0.50,
@@ -127,42 +126,6 @@ def _top_bottom_points(values: pd.Series, n: int, total_count: int) -> dict:
         "source_count": int(total_count),
         "pmax_points": point_rows(clean.tail(count)),
         "pmin_points": point_rows(clean.head(count)),
-    }
-
-
-def _inlet_summary(data: pd.DataFrame, params: dict) -> dict:
-    series = pd.to_numeric(data.get("inlet_pressure_kpa"), errors="coerce") if "inlet_pressure_kpa" in data.columns else pd.Series(dtype=float)
-    valid = series.dropna().astype(float)
-    max_fluct = _param_float(
-        params,
-        "inlet_pressure_max_fluctuation_percent",
-        DEFAULT_PERFORMANCE_PARAMS["inlet_pressure_max_fluctuation_percent"],
-    )
-    if valid.empty:
-        return {
-            "available": False,
-            "status": "未导入进口压力字段",
-            "mean": None,
-            "min": None,
-            "max": None,
-            "fluctuation_percent": None,
-            "fluctuation_ok": None,
-            "max_fluctuation_percent": max_fluct,
-        }
-    mean = float(valid.mean())
-    min_v = float(valid.min())
-    max_v = float(valid.max())
-    fluct = (max_v - min_v) / max(abs(mean), 1e-9) * 100.0
-    fluct_ok = fluct <= max_fluct
-    return {
-        "available": True,
-        "status": "进口压力波动满足前提" if fluct_ok else "进口压力波动超过前提",
-        "mean": round(mean, 4),
-        "min": round(min_v, 4),
-        "max": round(max_v, 4),
-        "fluctuation_percent": round(fluct, 4),
-        "fluctuation_ok": fluct_ok,
-        "max_fluctuation_percent": round(max_fluct, 4),
     }
 
 
@@ -447,7 +410,6 @@ def evaluate_performance(data: pd.DataFrame, features: dict, params: dict | None
     duration_hours = max(0.0, (ts.max() - ts.min()).total_seconds() / 3600.0)
 
     hours = ts.dt.hour
-    inlet = _inlet_summary(data, p)
     extreme_n = max(1, _param_int(p, "extreme_sample_n", DEFAULT_PERFORMANCE_PARAMS["extreme_sample_n"]))
     day_mask = (hours >= 6) & (hours <= 22)
     day_pressure = pressure[day_mask]
@@ -478,18 +440,6 @@ def evaluate_performance(data: pd.DataFrame, features: dict, params: dict | None
     steady_thresholds = (0.8, 1.0, 1.25, 1.5)
     steady_level, steady_label = _grade_by_ratio(steady_ratio, steady_thresholds)
     steady_confidence = _confidence(int(len(steady_sample)), duration_hours)
-    if not inlet.get("available"):
-        steady_confidence = {
-            **steady_confidence,
-            "score": max(0, int(steady_confidence.get("score", 0)) - 8),
-            "reason": (steady_confidence.get("reason") or "") + "；未导入进口压力字段，无法校验进口压力前提",
-        }
-    elif inlet.get("fluctuation_ok") is False:
-        steady_confidence = {
-            **steady_confidence,
-            "score": max(0, int(steady_confidence.get("score", 0)) - 20),
-            "reason": (steady_confidence.get("reason") or "") + "；进口压力波动超过5%前提，AC结论需复核",
-        }
 
     night_mask = (hours >= 0) & (hours <= 5)
     night_pressure = pressure[night_mask]
@@ -528,18 +478,6 @@ def evaluate_performance(data: pd.DataFrame, features: dict, params: dict | None
     closing_thresholds = (0.8, 1.0, 1.5, 2.0)
     closing_level, closing_label = _grade_by_ratio(closing_ratio, closing_thresholds)
     closing_confidence = _confidence(int(len(pressure)), duration_hours, int(len(night_pressure)))
-    if not inlet.get("available"):
-        closing_confidence = {
-            **closing_confidence,
-            "score": max(0, int(closing_confidence.get("score", 0)) - 8),
-            "reason": (closing_confidence.get("reason") or "") + "；未导入进口压力字段，无法校验进口压力前提",
-        }
-    elif inlet.get("fluctuation_ok") is False:
-        closing_confidence = {
-            **closing_confidence,
-            "score": max(0, int(closing_confidence.get("score", 0)) - 20),
-            "reason": (closing_confidence.get("reason") or "") + "；进口压力波动超过5%前提，SG结论需复核",
-        }
     if closing_confirmation_status != "formal_closing_pressure":
         confidence_penalty = 18 if low_flow_analysis.get("evidence_level") in {"weak", "insufficient"} else 10
         closing_confidence = {
@@ -631,7 +569,7 @@ def evaluate_performance(data: pd.DataFrame, features: dict, params: dict | None
             "confidence": steady_confidence,
             "definition": "AC为稳压精度等级，表示日间流量变化下出口压力偏离运行设定压力的百分比。",
             "formula": "取日间最高N个压力点均值得Pmax，取日间最低N个压力点均值得Pmin；实际AC = max(Pmax-设定值, 设定值-Pmin, 0) / 设定值 × 100%。",
-            "basis": f"{steady_source}；N={steady_n}。前提为进口压力在有效范围内且波动不大于{inlet.get('max_fluctuation_percent')}%。当前前提状态：{inlet.get('status')}。",
+            "basis": f"{steady_source}；N={steady_n}。Pmax、Pmin 分别采用最高和最低 N 个有效压力点的均值。",
             "method": "先由Pmax/Pmin测算实际AC%，再用实际AC% / 出厂AC% 的倍率区间判定：≤0.8为优良，0.8-1为合格，1-1.25为轻度偏差，1.25-1.5为较大偏差，>1.5为严重偏差。",
             "threshold_desc": "优良≤0.8倍出厂AC；合格≤1倍；轻度偏差≤1.25倍；较大偏差≤1.5倍；超过1.5倍为严重偏差。",
             "curve_markers": {
@@ -658,8 +596,6 @@ def evaluate_performance(data: pd.DataFrame, features: dict, params: dict | None
                 {"name": "超过AC比例", "value": round(steady_over_ac_ratio * 100, 2), "unit": "%"},
                 {"name": "连续超过AC最长时长", "value": steady_sustained_over_ac_min, "unit": "分钟"},
                 {"name": "超过0.8AC比例", "value": round(float(steady_over_08ac.mean()) * 100, 2), "unit": "%"},
-                {"name": "进口压力字段状态", "value": inlet.get("status"), "unit": ""},
-                {"name": "进口压力波动", "value": "" if inlet.get("fluctuation_percent") is None else inlet.get("fluctuation_percent"), "unit": "" if inlet.get("fluctuation_percent") is None else "%"},
             ],
         },
         {
@@ -678,7 +614,7 @@ def evaluate_performance(data: pd.DataFrame, features: dict, params: dict | None
             "confidence": closing_confidence,
             "definition": "SG为关闭压力等级，表示关闭或低流量状态下出口压力允许升高量相对于设定压力的百分比。",
             "formula": "实际SG = max(实测关闭压力 - 实测运行压力设定值, 0) / 实测运行压力设定值 × 100%。",
-            "basis": f"{closing_source}相对运行压力设定值的正向增量。前提为进口压力在有效范围内且波动不大于{inlet.get('max_fluctuation_percent')}%。当前前提状态：{inlet.get('status')}。",
+            "basis": f"{closing_source}相对运行压力设定值的正向增量。",
             "method": "先由实测关闭压力和运行压力设定值测算实际SG%，再用实际SG% / 出厂SG% 的倍率区间判定；无关闭压力字段时仍以低流量窗口锁闭投影作为估算。",
             "threshold_desc": "优良≤0.8倍出厂SG；合格≤1倍；轻度偏差≤1.5倍；较大偏差≤2倍；超过2倍为严重偏差。",
             "measured_pressure": round(closing_pressure, 4),
@@ -699,8 +635,6 @@ def evaluate_performance(data: pd.DataFrame, features: dict, params: dict | None
                 {"name": "超过SG比例", "value": round(closing_over_sg_ratio * 100, 2), "unit": "%"},
                 {"name": "连续超过SG最长时长", "value": closing_sustained_over_sg_min, "unit": "分钟"},
                 {"name": "夜间样本数", "value": int(len(night_pressure)), "unit": "点"},
-                {"name": "进口压力字段状态", "value": inlet.get("status"), "unit": ""},
-                {"name": "进口压力波动", "value": "" if inlet.get("fluctuation_percent") is None else inlet.get("fluctuation_percent"), "unit": "" if inlet.get("fluctuation_percent") is None else "%"},
             ],
         },
         {
@@ -747,17 +681,15 @@ def evaluate_performance(data: pd.DataFrame, features: dict, params: dict | None
             "ac_percent": round(ac_percent, 4),
             "sg_percent": round(sg_percent, 4),
             "extreme_sample_n": int(extreme_n),
-            "inlet_pressure_max_fluctuation_percent": inlet.get("max_fluctuation_percent"),
             "ac_limit_kpa": round(ac_limit_kpa, 4),
             "sg_limit_kpa": round(sg_limit_kpa, 4),
             "seat_leak_limit": round(leak_limit, 4),
             "seat_leak_unit": leak_unit,
             "seat_leak_surrogate_limit_kpa": round(surrogate_leak_limit_kpa, 4),
         },
-        "inlet_pressure": inlet,
         "low_flow_analysis": low_flow_analysis,
         "items": items,
         "overall": _overall_level(items),
         "method": "AC按日间最高/最低N点均值测算实际AC%；SG优先按实测关闭压力与运行压力设定值测算实际SG%，无字段时按低流量/近关闭片段锁闭投影估算；阀座密封优先按泄漏量字段判定。",
-        "note": "AC、SG判定前提为进口压力在有效范围内且波动不大于5%。未导入进口压力字段时，系统会给出结论但标记为前提未校验；仅有运行压力曲线时，P02/P03为模拟估算证据。",
+        "note": "仅有运行压力曲线时，P02/P03为模拟估算证据。",
     }
